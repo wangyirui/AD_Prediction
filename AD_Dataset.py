@@ -1,6 +1,6 @@
 import nibabel as nib
 
-class ADDataset(Dataset):
+class AD_Dataset(Dataset):
     """labeled Faces in the Wild dataset."""
     
     def __init__(self, root_dir, data_file, transform=None, data_augmentation=False):

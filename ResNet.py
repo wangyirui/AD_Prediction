@@ -2,22 +2,22 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-def Sideway(nn.Module):
+class Sideway(nn.Module):
 
 	def __init__(self, features):
-        super(Sideway, self).__init__()
-        self.bn = nn.BatchNorm3d(num_features = features)
-        self.conv = nn.Conv3d(  in_channels = features,
-        						out_channels = features,
-        						kernel_size = 3,
-        						stride = 1,
-        						padding = 1)
-    def forward(self, out):
-    	out = F.relu(self.bn(out))
-    	out = F.relu(self.bn(self.conv(out)))
-    	out = self.conv(out)
+		super(Sideway, self).__init__()
+		self.bn = nn.BatchNorm3d(num_features = features)
+		self.conv = nn.Conv3d(  in_channels = features,
+								out_channels = features,
+								kernel_size = 3,
+								stride = 1,
+								padding = 1)
+	def forward(self, out):
+		out = F.relu(self.bn(out))
+		out = F.relu(self.bn(self.conv(out)))
+		out = self.conv(out)
 
-def ResNet(nn.Module):
+class ResNet(nn.Module):
 
 	def __init__(self):
 		super(ResNet, self).__init__()

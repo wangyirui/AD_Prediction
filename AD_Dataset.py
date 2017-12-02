@@ -1,4 +1,5 @@
 import nibabel as nib
+from torch.utils.data import Dataset
 
 class AD_Dataset(Dataset):
     """labeled Faces in the Wild dataset."""

@@ -17,6 +17,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import OneHotEncoder
+
+from AD_Dataset import AD_Dataset
+from ResNet import ResNet
+from AlexNet import AlexNet
+
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s',
@@ -51,15 +58,15 @@ def main(options):
     # Path configuration
     TRAINING_PATH = 'train.txt'
     TESTING_PATH = 'test.txt'
-    IMG_PATH = './lfw'
+    IMG_PATH = './Image'
 
-    transformations = transforms.Compose([transforms.Scale((128,128)),
+    transformations = transforms.Compose([transforms.Scale((110,110,110)),
                                     transforms.ToTensor()
                                     ])
 
 
-    dset_train = DatasetProcessing(IMG_PATH, TRAINING_PATH, transformations)
-    dset_test = DatasetProcessing(IMG_PATH, TESTING_PATH, transformations)
+    dset_train = AD_Dataset(IMG_PATH, TRAINING_PATH, transformations)
+    dset_test = AD_Dataset(IMG_PATH, TESTING_PATH, transformations)
 
     if options.load is None:
         train_loader = DataLoader(dset_train,
@@ -87,144 +94,85 @@ def main(options):
     # Training process
     if options.load is None:
         # Initial the model
-        cnn_model = SIAMESE()
+        if options.network_type == 'AlexNet':
+            model = AlexNet()
+        else:
+            model = ResNet()
 
         if use_cuda > 0:
-            cnn_model.cuda()
+            model.cuda()
         else:
-            cnn_model.cpu()
+            model.cpu()
 
         # Binary cross-entropy loss
-        criterion = torch.nn.BCELoss()
+        criterion = torch.nn.NLLLoss()
 
 
-        optimizer = eval("torch.optim." + options.optimizer)(cnn_model.parameters(), options.learning_rate)
+        optimizer = eval("torch.optim." + options.optimizer)(model.parameters(), options.learning_rate)
 
-        # main training loop
+
+        label_encoder = LabelEncoder()
+        onehot_encoder = OneHotEncoder(sparse=False)
+
+        # Prepare for label encoding
         last_dev_avg_loss = float("inf")
         best_accuracy = float("-inf")
-        epoch_lst = []
-        loss_history = []
+
+        # main training loop
         for epoch_i in range(options.epochs):
             logging.info("At {0}-th epoch.".format(epoch_i))
             train_loss = 0.0
-            correct_prediction = 0.0
 
             for it, train_data in enumerate(train_loader):
-                img0, img1, labels = train_data
+                data_dic = train_data
 
                 if use_cuda:
-                    img0, img1 , labels = Variable(img0).cuda(), Variable(img1).cuda() , Variable(labels).cuda()
+                    imgs, labels = Variable(data_dic['image']).cuda(), Variable(data_dic['label']).cuda() 
                 else:
-                    img0, img1 , labels = Variable(img0), Variable(img1), Variable(labels)
+                    imgs, labels = Variable(data_dic['image']), Variable(data_dic['label'])
 
-                # Use tag BCE to indicate BCE loss
-                train_output = cnn_model(img0,img1,'BCE')
-                loss = criterion(train_output, labels)
-                predict = torch.round(train_output)
+                print "labels"
+                print labels
+                integer_encoded = label_encoder.fit_transform(labels)
 
+                # binary encode
+                integer_encoded = integer_encoded.reshape(len(integer_encoded), 1)
+                onehot_encoded = onehot_encoder.fit_transform(integer_encoded)
 
+                train_output = model(imgs)
+                loss = criterion(train_output, onehot_encoded)
                 train_loss += loss
-                correct_prediction += (predict.float() == labels).sum().float()
                 logging.debug("loss at batch {0}: {1}".format(it, loss.data[0]))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
             train_avg_loss = train_loss / (len(dset_train) / options.batch_size)
-            training_accuracy = (correct_prediction / len(dset_train)).data.cpu().numpy()[0]
             logging.info("Average training loss is {0} at the end of epoch {1}".format(train_avg_loss.data[0], epoch_i))
-            logging.info("Training accuracy is {0} at the end of epoch {1}".format(training_accuracy, epoch_i))
-
+            
             # validation -- this is a crude esitmation because there might be some paddings at the end
             dev_loss = 0.0
             correct_prediction = 0.0
             for it, test_data in enumerate(test_loader):
-                img0, img1, labels = test_data
+                data_dic = test_data
 
                 if use_cuda:
-                    img0, img1 , labels = Variable(img0, volatile=True).cuda(), Variable(img1, volatile=True).cuda() , Variable(labels, volatile=True).cuda()
+                    imgs, labels = Variable(data_dic['image']).cuda(), Variable(data_dic['label']).cuda() 
                 else:
-                    img0, img1 , labels = Variable(img0, volatile=True), Variable(img1, volatile=True), Variable(labels, volatile=True)
+                    imgs, labels = Variable(data_dic['image']), Variable(data_dic['label'])
 
 
-                test_output = cnn_model(img0,img1, 'BCE')
+                test_output = model(imgs)
                 loss = criterion(test_output, labels)
-                predict = torch.round(test_output)
-
-
                 dev_loss += loss
-
-                correct_prediction += (predict.float() == labels).sum().float()
-
             dev_avg_loss = dev_loss / (len(dset_test) / options.batch_size)
-            testing_accuracy = (correct_prediction / len(dset_test)).data.cpu().numpy()[0]
             logging.info("Average validation loss is {0} at the end of epoch {1}".format(dev_avg_loss.data[0], epoch_i))
-            logging.info("Validation accuracy is {0} at the end of epoch {1}".format(testing_accuracy, epoch_i))
-
-            epoch_lst.append(epoch_i)
-            loss_history.append(dev_avg_loss.data[0])
-
+            
             if testing_accuracy > best_accuracy:
                 best_accuracy = testing_accuracy
                 if options.save is not None:
-                    #torch.save(cnn_model.state_dict(), open(options.save + ".bce_{0:.2f}.epoch_{1}".format(dev_avg_loss.data[0], epoch_i), 'wb'))
-                    torch.save(cnn_model.state_dict(), options.save )
+                    torch.save(model.state_dict(), options.save )
             last_dev_avg_loss = dev_avg_loss
-
-    # Testing process
-    else:
-        # Initial the model
-        cnn_model = SIAMESE()
-
-        if use_cuda > 0:
-            cnn_model.cuda()
-        else:
-            cnn_model.cpu()
-
-        cnn_model.load_state_dict(torch.load(options.load))
-
-        # main training loop
-
-        correct_prediction = 0.0
-        for it, train_data in enumerate(train_loader):
-            img0, img1, labels = train_data
-
-            if use_cuda:
-                img0, img1, labels = Variable(img0, volatile=True).cuda(), Variable(img1,volatile=True).cuda(), Variable(labels, volatile=True).cuda()
-            else:
-                img0, img1, labels = Variable(img0, volatile=True), Variable(img1, volatile=True), Variable(labels,volatile=True)
-
-            # Use tag BCE to indicate BCE loss
-            train_output = cnn_model(img0, img1, 'BCE')
-            predict = torch.round(train_output)
-            correct_prediction += (predict.float() == labels).sum().float()
-
-
-
-        training_accuracy = (correct_prediction / len(dset_train)).data.cpu().numpy()[0]
-        logging.info("Training accuracy is {0}.".format(training_accuracy))
-
-        # validation -- this is a crude esitmation because there might be some paddings at the end
-        correct_prediction = 0.0
-        for it, test_data in enumerate(test_loader):
-            img0, img1, labels = test_data
-
-            if use_cuda:
-                img0, img1, labels = Variable(img0, volatile=True).cuda(), Variable(img1,
-                                                                                    volatile=True).cuda(), Variable(
-                    labels, volatile=True).cuda()
-            else:
-                img0, img1, labels = Variable(img0, volatile=True), Variable(img1, volatile=True), Variable(labels,volatile=True)
-
-            test_output = cnn_model(img0, img1, 'BCE')
-            predict = torch.round(test_output)
-
-            correct_prediction += (predict.float() == labels).sum().float()
-
-        testing_accuracy = (correct_prediction / len(dset_test)).data.cpu().numpy()[0]
-        logging.info("Validation accuracy is {0}.".format(testing_accuracy))
-
 
 
 if __name__ == "__main__":

@@ -53,7 +53,7 @@ class ResNet(nn.Module):
 		self.sideway2 = Sideway(features = 128)
 		self.pool = nn.MaxPool3d(kernel_size = 7,
 								stride = 1)
-		self.fc1 = nn.Linear(in_features = 216, 
+		self.fc1 = nn.Linear(in_features = 65536, 
 							 out_features = 128)
 		self.fc2 = nn.Linear(in_features = 128,
 							 out_features = 2)

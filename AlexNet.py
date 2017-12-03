@@ -5,7 +5,7 @@ class AlexNet(nn.Module):
     def __init__(self, num_classes=3):
         super(AlexNet, self).__init__()
         self.features = nn.Sequential(
-            nn.Conv3d(3, 64, kernel_size=11, stride=4, padding=2),
+            nn.Conv3d(1, 64, kernel_size=11, stride=4, padding=2),
             nn.ReLU(inplace=True),
             nn.MaxPool3d(kernel_size=3, stride=2),
             nn.Conv3d(64, 192, kernel_size=5, padding=2),

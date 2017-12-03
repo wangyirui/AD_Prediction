@@ -153,8 +153,8 @@ def main(options):
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
                 correct_cnt += correct_this_batch
                 accuracy = float(correct_this_batch) / len(ground_truth)
-                logging.info("loss at batch {0}: {1}".format(it, loss.data[0]))
-                logging.info("accuracy at batch {0}: {1}".format(it, accuracy))
+                logging.info("loss at batch {0}: {1:.6f}".format(it, loss.data[0]))
+                logging.info("accuracy at batch {0}: {1:.6f}".format(it, accuracy))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -189,8 +189,8 @@ def main(options):
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
                 correct_cnt += (predict.squeeze(1) == ground_truth).sum()
                 accuracy = float(correct_this_batch) / len(ground_truth)
-                logging.info("loss at batch {0:.6f}: {1}".format(it, loss.data[0]))
-                logging.info("accuracy at batch {0:.6f}: {1}".format(it, accuracy))
+                logging.info("loss at batch {0}: {1:.6f}".format(it, loss.data[0]))
+                logging.info("accuracy at batch {0}: {1:.6f}".format(it, accuracy))
 
             dev_avg_loss = dev_loss / (len(dset_test) / options.batch_size)
             dev_avg_acu = float(correct_cnt) / len(dset_test)

@@ -32,7 +32,8 @@ class ResNet(nn.Module):
 								kernel_size = 3,
 								stride = 1,
 								padding = 1)
-		self.bn1 = nn.BatchNorm3d(num_features = 32)
+		self.bn1_0 = nn.BatchNorm3d(num_features = 32)
+		self.bn1_1 = nn.BatchNorm3d(num_features = 32)
 		self.conv2_0 = nn.Conv3d(in_channels = 32,
 								out_channels = 64,
 								kernel_size = 3,
@@ -43,14 +44,19 @@ class ResNet(nn.Module):
 								kernel_size = 3,
 								stride = 2,
 								padding = 1)
-		self.sideway1 = Sideway(features = 64)
-		self.bn2 = nn.BatchNorm3d(num_features = 64)
+		self.sideway1_0 = Sideway(features = 64)
+		self.sideway1_1 = Sideway(features = 64)
+		self.sideway1_2 = Sideway(features = 64)
+		self.sideway1_3 = Sideway(features = 64)
+		self.bn2_0 = nn.BatchNorm3d(num_features = 64)
+		self.bn2_1 = nn.BatchNorm3d(num_features = 64)
 		self.conv3 = nn.Conv3d( in_channels =64,
 								out_channels = 128,
 								kernel_size = 3,
 								stride = 2,
 								padding =1)
-		self.sideway2 = Sideway(features = 128)
+		self.sideway2_0 = Sideway(features = 128)
+		self.sideway2_1 = Sideway(features = 128)
 		self.pool = nn.MaxPool3d(kernel_size = 7,
 								stride = 1)
 		self.fc1 = nn.Linear(in_features = 65536, 
@@ -61,24 +67,24 @@ class ResNet(nn.Module):
 
 
 	def forward(self, out):
-		out = F.relu(self.bn1(self.conv1_0(out)))
-		out = F.relu(self.bn1(self.conv1_1(out)))
+		out = F.relu(self.bn1_0(self.conv1_0(out)))
+		out = F.relu(self.bn1_1(self.conv1_1(out)))
 		out = self.conv2_0(out)
-		out_s = self.sideway1(out)
+		out_s = self.sideway1_0(out)
 		out += out_s
-		out_s = self.sideway1(out)
+		out_s = self.sideway1_1(out)
 		out += out_s
-		out = F.relu(self.bn2(out))
+		out = F.relu(self.bn2_0(out))
 		out = self.conv2_1(out)
-		out_s = self.sideway1(out)
+		out_s = self.sideway1_2(out)
 		out += out_s
-		out_s = self.sideway1(out)
+		out_s = self.sideway1_3(out)
 		out += out_s
-		out = F.relu(self.bn2(out))
+		out = F.relu(self.bn2_1(out))
 		out = self.conv3(out)
-		out_s = self.sideway2(out)
+		out_s = self.sideway2_0(out)
 		out += out_s
-		out_s = self.sideway2(out)
+		out_s = self.sideway2_1(out)
 		out += out_s 
 		out = self.pool(out)
 		out = out.view(out.size(0), 65536)

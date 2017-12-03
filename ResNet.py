@@ -75,7 +75,7 @@ class ResNet(nn.Module):
 		out_s = self.sideway1(out)
 		out += out_s
 		out = F.relu(self.bn2(out))
-		out = conv3(out)
+		out = self.conv3(out)
 		out_s = self.sideway2(out)
 		out += out_s
 		out_s = self.sideway2(out)

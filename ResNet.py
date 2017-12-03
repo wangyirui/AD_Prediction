@@ -81,6 +81,7 @@ class ResNet(nn.Module):
 		out_s = self.sideway2(out)
 		out += out_s 
 		out = self.pool(out)
+		out = out.view(out.size[0], 216)
 		out = F.relu(self.fc1(out))
 		out = self.softmax(self.fc2(out))
 		return out

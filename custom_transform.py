@@ -13,12 +13,15 @@ class CustomResize(object):
 
         self.trg_size = trg_size
 
-    def __call__(self, img):
+    def __call__(self, img, networt_type):
 
-        resized_img = self.resize_image(img, self.trg_size)
+        if networt_type == "AlexNet":
+            resized_img = self.resize_image(img, self.trg_size)
+        else:
+            resized_img = self.rescale_image(img, self.trg_size)
         return resized_img
 
-    def resize_image(selfs, img, trg_size):
+    def resize_image(self, img, trg_size):
         img_array = np.asarray(img.get_data())
         # color_img = skimage.color.gray2rgb(img_array)
         # color_img[:, :, :, 0] = img_array
@@ -35,13 +38,22 @@ class CustomResize(object):
         # PIL image cannot handle 3D image, only return ndarray type, which ToTensor accepts
         return res
 
+    def rescale_image(self, img, trg_size):
+        down_sampling = resize(img, trg_size, mode='reflect', anti_aliasing=True, preserve_range=True)
+        res = down_sampling.astype(np.uint8)
+        return res
+
 class CustomToTensor(object):
 
-    def __call__(self, pic):
+    def __call__(self, pic, networt_type):
 
         if isinstance(pic, np.ndarray):
-            # handle numpy array
-            img = torch.from_numpy(pic.transpose((2, 0, 1)))
+            if networt_type == "AlexNet":
+                # handle numpy array
+                img = torch.from_numpy(pic.transpose((3, 0, 1, 2)))
+            else:
+                img = torch.from_numpy(pic)
+                img = torch.unsqueeze(pic,0)
             # backward compatibility
             return img.float().div(255)
 

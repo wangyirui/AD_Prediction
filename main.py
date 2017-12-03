@@ -140,15 +140,14 @@ def main(options):
 
                 # add channel dimension: (batch_size, D, H ,W) to (batch_size, 1, D, H ,W)
                 # since 3D convolution requires 5D tensors
-                # img_tmp = imgs.view(options.batch_size, 1, trg_size[0], trg_size[1], trg_size[2])
-                # # converted to a color patch by repeating the gray channel thrice
-                # input_imgs = torch.cat([img_tmp,img_tmp,img_tmp], 1)
+                img_input = imgs.unsqueeze(1)
+
                 integer_encoded = labels.data.cpu().numpy()
                 # target should be LongTensor in loss function
                 ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
                 if use_cuda:
                     ground_truth = ground_truth.cuda()
-                train_output = model(imgs)
+                train_output = model(img_input)
                 train_prob_loss = F.log_softmax(train_output, dim=1)
                 train_prob_predict = F.softmax(train_output, dim=1)
                 _, predict = train_prob_predict.topk(1)
@@ -179,14 +178,12 @@ def main(options):
                 else:
                     imgs, labels = Variable(data_dic['image'], volatile=True), Variable(data_dic['label'], volatile=True)
 
-                # img_tmp = imgs.view(options.batch_size, 1, trg_size[0], trg_size[1], trg_size[2])
-                # # converted to a color patch by repeating the gray channel thrice
-                # input_imgs = torch.cat([img_tmp, img_tmp, img_tmp], 1)
+                img_input = imgs.unsqueeze(1)
                 integer_encoded = labels.data.cpu().numpy()
                 ground_truth = Variable(torch.from_numpy(integer_encoded), volatile=True).long()
                 if use_cuda:
                     ground_truth = ground_truth.cuda()
-                test_output = model(imgs)
+                test_output = model(img_input)
                 test_prob_loss = F.log_softmax(test_output, dim=1)
                 test_prob_predict = F.softmax(test_output, dim=1)
                 _, predict = test_prob_predict.topk(1)

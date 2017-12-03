@@ -20,6 +20,7 @@ import numpy as np
 import random
 
 from custom_transform import CustomResize
+from custom_transform import CustomToTensor
 
 from AD_Dataset import AD_Dataset
 from ResNet import ResNet
@@ -61,9 +62,13 @@ def main(options):
     TESTING_PATH = 'test.txt'
     IMG_PATH = './Image'
 
-    trg_size = (110, 110, 110)
+    if options.network_type == 'AlexNet':
+        trg_size = (224, 224, 224)
+    else:
+        trg_size = (110, 110, 110)
+        
     transformations = transforms.Compose([CustomResize(trg_size),
-                                    transforms.ToTensor()
+                                          CustomToTensor()
                                     ])
 
 
@@ -135,16 +140,15 @@ def main(options):
 
                 # add channel dimension: (batch_size, D, H ,W) to (batch_size, 1, D, H ,W)
                 # since 3D convolution requires 5D tensors
-                try:
-                    input_imgs = imgs.view(options.batch_size, 1, trg_size[0], trg_size[1], trg_size[2])
-                except:
-                    print "error"
+                # img_tmp = imgs.view(options.batch_size, 1, trg_size[0], trg_size[1], trg_size[2])
+                # # converted to a color patch by repeating the gray channel thrice
+                # input_imgs = torch.cat([img_tmp,img_tmp,img_tmp], 1)
                 integer_encoded = labels.data.cpu().numpy()
                 # target should be LongTensor in loss function
                 ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
                 if use_cuda:
                     ground_truth = ground_truth.cuda()
-                train_output = model(input_imgs)
+                train_output = model(imgs)
                 train_prob_loss = F.log_softmax(train_output, dim=1)
                 train_prob_predict = F.softmax(train_output, dim=1)
                 _, predict = train_prob_predict.topk(1)
@@ -153,16 +157,16 @@ def main(options):
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
                 correct_cnt += correct_this_batch
                 accuracy = float(correct_this_batch) / len(ground_truth)
-                logging.info("loss at batch {0}: {1:.6f}".format(it, loss.data[0]))
-                logging.info("accuracy at batch {0}: {1:.6f}".format(it, accuracy))
+                logging.info("loss at batch {0}: {1:.5f}".format(it, loss.data[0]))
+                logging.info("accuracy at batch {0}: {1:.5f}".format(it, accuracy))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
             train_avg_loss = train_loss / (len(dset_train) / options.batch_size)
             train_avg_acu = float(correct_cnt) / len(dset_train)
-            logging.info("Average training loss is {0:.6f} at the end of epoch {1}".format(train_avg_loss.data[0], epoch_i))
-            logging.info("Average training accuracy is {0:.6f} at the end of epoch {1}".format(train_avg_acu, epoch_i))
+            logging.info("Average training loss is {0:.5f} at the end of epoch {1}".format(train_avg_loss.data[0], epoch_i))
+            logging.info("Average training accuracy is {0:.5f} at the end of epoch {1}".format(train_avg_acu, epoch_i))
             
             # validation -- this is a crude esitmation because there might be some paddings at the end
             dev_loss = 0.0
@@ -175,12 +179,14 @@ def main(options):
                 else:
                     imgs, labels = Variable(data_dic['image'], volatile=True), Variable(data_dic['label'], volatile=True)
 
-                input_imgs = imgs.view(options.batch_size, 1, trg_size[0], trg_size[1], trg_size[2])
+                # img_tmp = imgs.view(options.batch_size, 1, trg_size[0], trg_size[1], trg_size[2])
+                # # converted to a color patch by repeating the gray channel thrice
+                # input_imgs = torch.cat([img_tmp, img_tmp, img_tmp], 1)
                 integer_encoded = labels.data.cpu().numpy()
                 ground_truth = Variable(torch.from_numpy(integer_encoded), volatile=True).long()
                 if use_cuda:
                     ground_truth = ground_truth.cuda()
-                test_output = model(input_imgs)
+                test_output = model(imgs)
                 test_prob_loss = F.log_softmax(test_output, dim=1)
                 test_prob_predict = F.softmax(test_output, dim=1)
                 _, predict = test_prob_predict.topk(1)
@@ -189,15 +195,15 @@ def main(options):
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
                 correct_cnt += (predict.squeeze(1) == ground_truth).sum()
                 accuracy = float(correct_this_batch) / len(ground_truth)
-                logging.info("loss at batch {0}: {1:.6f}".format(it, loss.data[0]))
-                logging.info("accuracy at batch {0}: {1:.6f}".format(it, accuracy))
+                logging.info("loss at batch {0}: {1:.5f}".format(it, loss.data[0]))
+                logging.info("accuracy at batch {0}: {1:.5f}".format(it, accuracy))
 
             dev_avg_loss = dev_loss / (len(dset_test) / options.batch_size)
             dev_avg_acu = float(correct_cnt) / len(dset_test)
-            logging.info("Average validation loss is {0:.6f} at the end of epoch {1}".format(dev_avg_loss.data[0], epoch_i))
-            logging.info("Average validation accuracy is {0:.6f} at the end of epoch {1}".format(dev_avg_acu, epoch_i))
+            logging.info("Average validation loss is {0:.5f} at the end of epoch {1}".format(dev_avg_loss.data[0], epoch_i))
+            logging.info("Average validation accuracy is {0:.5f} at the end of epoch {1}".format(dev_avg_acu, epoch_i))
 
-            torch.save(model.state_dict(), open(options.save + ".nll_{0:.4f}.epoch_{1}".format(dev_avg_loss.data[0], epoch_i), 'wb'))
+            torch.save(model.state_dict(), open(options.save + ".nll_{0:.3f}.epoch_{1}".format(dev_avg_loss.data[0], epoch_i), 'wb'))
 
             last_dev_avg_loss = dev_avg_loss
 

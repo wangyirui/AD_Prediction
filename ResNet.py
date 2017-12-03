@@ -71,22 +71,22 @@ class ResNet(nn.Module):
 		out = F.relu(self.bn1_1(self.conv1_1(out)))
 		out = self.conv2_0(out)
 		out_s = self.sideway1_0(out)
-		out += out_s
-		out_s = self.sideway1_1(out)
-		out += out_s
-		out = F.relu(self.bn2_0(out))
+
+		out_s = self.sideway1_1(out+out_s)
+
+		out = F.relu(self.bn2_0(out+out_s))
 		out = self.conv2_1(out)
 		out_s = self.sideway1_2(out)
-		out += out_s
-		out_s = self.sideway1_3(out)
-		out += out_s
-		out = F.relu(self.bn2_1(out))
+
+		out_s = self.sideway1_3(out+out_s)
+
+		out = F.relu(self.bn2_1(out+out_s))
 		out = self.conv3(out)
 		out_s = self.sideway2_0(out)
-		out += out_s
-		out_s = self.sideway2_1(out)
-		out += out_s 
-		out_ = self.pool(out)
+
+		out_s = self.sideway2_1(out+out_s)
+
+		out_ = self.pool(out+out_s)
 		out = out_.view(out_.size(0), 128)
 		out = F.relu(self.fc1(out))
 		out = self.softmax(self.fc2(out))

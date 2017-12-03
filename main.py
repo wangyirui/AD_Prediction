@@ -75,20 +75,23 @@ def main(options):
         train_loader = DataLoader(dset_train,
                                   batch_size = options.batch_size,
                                   shuffle = True,
-                                  num_workers = 4
+                                  num_workers = 4,
+                                  drop_last = True
                                  )
     else:
         # Only shuffle the data when doing training
         train_loader = DataLoader(dset_train,
                                   batch_size=options.batch_size,
                                   shuffle=False,
-                                  num_workers=4
+                                  num_workers=4,
+                                  drop_last=True
                                   )
 
     test_loader = DataLoader(dset_test,
                              batch_size = options.batch_size,
                              shuffle = False,
-                             num_workers = 4
+                             num_workers = 4,
+                             drop_last=True
                              )
 
     use_cuda = (len(options.gpuid) >= 1)
@@ -132,7 +135,10 @@ def main(options):
 
                 # add channel dimension: (batch_size, D, H ,W) to (batch_size, 1, D, H ,W)
                 # since 3D convolution requires 5D tensors
-                input_imgs = imgs.view(options.batch_size, 1, trg_size[0], trg_size[1], trg_size[2])
+                try:
+                    input_imgs = imgs.view(options.batch_size, 1, trg_size[0], trg_size[1], trg_size[2])
+                except:
+                    print "error"
                 integer_encoded = labels.data.cpu().numpy()
                 # target should be LongTensor in loss function
                 ground_truth = Variable(torch.from_numpy(integer_encoded)).long()

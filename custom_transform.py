@@ -24,13 +24,7 @@ class CustomResize(object):
 
     def resize_image(self, img, trg_size):
         img_array = np.asarray(img.get_data())
-        # color_img = skimage.color.gray2rgb(img_array)
-        # color_img[:, :, :, 0] = img_array
-        # color_img[:, :, :, 1] = img_array
-        # color_img[:, :, :, 2] = img_array
-        down_sampling = resize(img_array, trg_size, mode='reflect', anti_aliasing=False, preserve_range=True)
-        res = down_sampling
-        print "pause"
+        res = resize(img_array, trg_size, mode='reflect', anti_aliasing=False, preserve_range=True)
 
         # type check
         if type(res) != np.ndarray:
@@ -41,8 +35,8 @@ class CustomResize(object):
 
     def rescale_image(self, img, trg_size):
         img_array = np.asarray(img.get_data())
-        down_sampling = resize(img_array, trg_size, mode='reflect', anti_aliasing=False, preserve_range=True)
-        res = down_sampling
+        res = resize(img_array, trg_size, mode='reflect', anti_aliasing=False, preserve_range=True)
+
         return res
 
 class CustomToTensor(object):
@@ -55,12 +49,10 @@ class CustomToTensor(object):
         if isinstance(pic, np.ndarray):
             if self.network_type == "AlexNet":
                 # handle numpy array
-                img = torch.from_numpy(pic.transpose((3, 0, 1, 2)))
-                print img.shape
+                img = torch.from_numpy(pic.transpose((2, 0, 1)))
             else:
                 img = torch.from_numpy(pic)
                 img = torch.unsqueeze(img,0)
-                print img.shape
             # backward compatibility
             return img.float().div(255)
 

@@ -151,8 +151,8 @@ def main(options):
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
                 correct_cnt += correct_this_batch
                 accuracy = float(correct_this_batch) / len(ground_truth)
-                logging.info("loss at batch {0}: {1}".format(it, loss.data[0]))
-                logging.info("accuracy at batch {0}: {1}".format(it, accuracy))
+                logging.debug("loss at batch {0}: {1}".format(it, loss.data[0]))
+                logging.debug("accuracy at batch {0}: {1}".format(it, accuracy))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -169,13 +169,13 @@ def main(options):
                 data_dic = test_data
 
                 if use_cuda:
-                    imgs, labels = Variable(data_dic['image']).cuda(), Variable(data_dic['label']).cuda() 
+                    imgs, labels = Variable(data_dic['image'], volatile=True).cuda(), Variable(data_dic['label'], volatile=True).cuda() 
                 else:
-                    imgs, labels = Variable(data_dic['image']), Variable(data_dic['label'])
+                    imgs, labels = Variable(data_dic['image'], volatile=True), Variable(data_dic['label'], volatile=True)
 
                 input_imgs = imgs.view(options.batch_size, 1, trg_size[0], trg_size[1], trg_size[2])
                 integer_encoded = labels.data.cpu().numpy()
-                ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
+                ground_truth = Variable(torch.from_numpy(integer_encoded), volatile=True).long()
                 if use_cuda:
                     ground_truth = ground_truth.cuda()
                 test_output = model(input_imgs)

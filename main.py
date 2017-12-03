@@ -112,7 +112,7 @@ def main(options):
             model = ResNet()
 
         if use_cuda > 0:
-            model = torch.nn.DataParallel(model, device_ids=options.gpuid)
+            model = torch.nn.DataParallel(model, device_ids=options.gpuid).cuda()
         else:
             model.cpu()
 

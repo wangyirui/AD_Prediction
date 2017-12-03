@@ -9,13 +9,14 @@ import matplotlib.pyplot as plt
 
 
 class CustomResize(object):
-    def __init__(self, trg_size=(110,110,110)):
+    def __init__(self, network_type, trg_size=(110,110,110)):
 
         self.trg_size = trg_size
+        self.network_type = network_type
 
-    def __call__(self, img, networt_type):
+    def __call__(self, img):
 
-        if networt_type == "AlexNet":
+        if self.network_type == "AlexNet":
             resized_img = self.resize_image(img, self.trg_size)
         else:
             resized_img = self.rescale_image(img, self.trg_size)
@@ -28,7 +29,7 @@ class CustomResize(object):
         # color_img[:, :, :, 1] = img_array
         # color_img[:, :, :, 2] = img_array
         down_sampling = resize(img_array, trg_size, mode='reflect', anti_aliasing=False, preserve_range=True)
-        res = down_sampling.astype(np.uint8)
+        res = down_sampling
         print "pause"
 
         # type check
@@ -39,21 +40,27 @@ class CustomResize(object):
         return res
 
     def rescale_image(self, img, trg_size):
-        down_sampling = resize(img, trg_size, mode='reflect', anti_aliasing=True, preserve_range=True)
-        res = down_sampling.astype(np.uint8)
+        img_array = np.asarray(img.get_data())
+        down_sampling = resize(img_array, trg_size, mode='reflect', anti_aliasing=False, preserve_range=True)
+        res = down_sampling
         return res
 
 class CustomToTensor(object):
+    def __init__(self, network_type):
 
-    def __call__(self, pic, networt_type):
+        self.network_type = network_type
+
+    def __call__(self, pic):
 
         if isinstance(pic, np.ndarray):
-            if networt_type == "AlexNet":
+            if self.network_type == "AlexNet":
                 # handle numpy array
                 img = torch.from_numpy(pic.transpose((3, 0, 1, 2)))
+                print img.shape
             else:
                 img = torch.from_numpy(pic)
-                img = torch.unsqueeze(pic,0)
+                img = torch.unsqueeze(img,0)
+                print img.shape
             # backward compatibility
             return img.float().div(255)
 

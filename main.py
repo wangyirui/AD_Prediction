@@ -67,8 +67,8 @@ def main(options):
     else:
         trg_size = (110, 110, 110)
         
-    transformations = transforms.Compose([CustomResize(trg_size, options.network_type),
-                                          CustomToTensor(network_type)
+    transformations = transforms.Compose([CustomResize(options.network_type, trg_size),
+                                          CustomToTensor(options.network_type)
                                     ])
 
 

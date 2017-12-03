@@ -148,8 +148,9 @@ def main(options):
                 _, predict = train_prob_predict.topk(1)
                 loss = criterion(train_prob_loss, ground_truth)
                 train_loss += loss
-                correct_cnt += (predict.squeeze(1) == ground_truth).sum()
-                accuracy = float(correct_cnt) / len(ground_truth)
+                correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
+                correct_cnt += correct_this_batch
+                accuracy = float(correct_this_batch) / len(ground_truth)
                 logging.info("loss at batch {0}: {1}".format(it, loss.data[0]))
                 logging.info("accuracy at batch {0}: {1}".format(it, accuracy))
                 optimizer.zero_grad()

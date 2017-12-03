@@ -59,7 +59,7 @@ class ResNet(nn.Module):
 		self.sideway2_1 = Sideway(features = 128)
 		self.pool = nn.MaxPool3d(kernel_size = 7,
 								stride = 1)
-		self.fc1 = nn.Linear(in_features = 65536, 
+		self.fc1 = nn.Linear(in_features = 128, 
 							 out_features = 128)
 		self.fc2 = nn.Linear(in_features = 128,
 							 out_features = 2)
@@ -87,7 +87,7 @@ class ResNet(nn.Module):
 		out_s = self.sideway2_1(out)
 		out += out_s 
 		out = self.pool(out)
-		out = out.view(out.size(0), 65536)
+		out = out.view(out.size(0), 128)
 		out = F.relu(self.fc1(out))
 		out = self.softmax(self.fc2(out))
 		return out

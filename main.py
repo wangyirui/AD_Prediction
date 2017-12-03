@@ -150,8 +150,8 @@ def main(options):
                 train_loss += loss
                 correct_cnt += (predict.squeeze(1) == ground_truth).sum()
                 accuracy = float(correct_cnt) / len(ground_truth)
-                logging.debug("loss at batch {0}: {1}".format(it, loss.data[0]))
-                logging.debug("accuracy at batch {0}: {1}".format(it, accuracy))
+                logging.info("loss at batch {0}: {1}".format(it, loss.data[0]))
+                logging.info("accuracy at batch {0}: {1}".format(it, accuracy))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -163,7 +163,7 @@ def main(options):
             
             # validation -- this is a crude esitmation because there might be some paddings at the end
             dev_loss = 0.0
-            correct_prediction = 0.0
+            correct_cnt = 0.0
             for it, test_data in enumerate(test_loader):
                 data_dic = test_data
 

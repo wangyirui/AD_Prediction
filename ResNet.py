@@ -16,6 +16,7 @@ class Sideway(nn.Module):
 		out = F.relu(self.bn(out))
 		out = F.relu(self.bn(self.conv(out)))
 		out = self.conv(out)
+		return out
 
 class ResNet(nn.Module):
 
@@ -82,3 +83,4 @@ class ResNet(nn.Module):
 		out = self.pool(out)
 		out = F.relu(self.fc1(out))
 		out = self.softmax(self.fc2(out))
+		return out

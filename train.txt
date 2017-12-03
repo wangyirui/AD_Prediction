@@ -114,7 +114,6 @@
 033_S_1309.nii MCI
 136_S_0186.nii Normal
 035_S_0033.nii MCI
-006_S_0484.nii Normal
 137_S_0669.nii MCI
 073_S_1357.nii MCI
 100_S_0995.nii MCI
@@ -340,7 +339,6 @@
 127_S_0259.nii Normal
 127_S_0844.nii AD
 141_S_1152.nii AD
-098_S_0288.nii MCI
 029_S_1218.nii MCI
 036_S_0813.nii Normal
 067_S_1253.nii AD

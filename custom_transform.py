@@ -51,8 +51,7 @@ class CustomToTensor(object):
                 # handle numpy array
                 img = torch.from_numpy(pic.transpose((2, 0, 1)))
             else:
-                img = torch.from_numpy(pic)
-                img = torch.unsqueeze(img,0)
+                img = torch.from_numpy(pic.transpose((2, 0, 1)))  
             # backward compatibility
             return img.float().div(255)
 

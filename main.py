@@ -13,12 +13,15 @@ import torchvision.transforms as transforms
 import torchvision.utils
 from PIL import Image
 
+import torch.nn.functional as F
+
 import matplotlib.pyplot as plt
 import numpy as np
 import random
 
-from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import OneHotEncoder
+
+from custom_transform import CustomResize
 
 from AD_Dataset import AD_Dataset
 from ResNet import ResNet
@@ -35,7 +38,7 @@ parser.add_argument("--network_type", "--nt", default="AlexNet", choices=["AlexN
                     help="Deep network type. (default=AlexNet)")
 parser.add_argument("--load",
                     help="Load saved network weights.")
-parser.add_argument("--save", default="best_model.bce_aug",
+parser.add_argument("--save", default="best_model",
                     help="Save network weights.")  
 parser.add_argument("--augmentation", default=True, type=bool,
                     help="Save network weights.")
@@ -60,7 +63,8 @@ def main(options):
     TESTING_PATH = 'test.txt'
     IMG_PATH = './Image'
 
-    transformations = transforms.Compose([transforms.Scale((110,110,110)),
+    trg_size = (110, 110, 110)
+    transformations = transforms.Compose([CustomResize(trg_size),
                                     transforms.ToTensor()
                                     ])
 
@@ -68,6 +72,7 @@ def main(options):
     dset_train = AD_Dataset(IMG_PATH, TRAINING_PATH, transformations)
     dset_test = AD_Dataset(IMG_PATH, TESTING_PATH, transformations)
 
+    # Use argument load to distinguish training and testing
     if options.load is None:
         train_loader = DataLoader(dset_train,
                                   batch_size = options.batch_size,
@@ -75,6 +80,7 @@ def main(options):
                                   num_workers = 4
                                  )
     else:
+        # Only shuffle the data when doing training
         train_loader = DataLoader(dset_train,
                                   batch_size=options.batch_size,
                                   shuffle=False,
@@ -107,11 +113,8 @@ def main(options):
         # Binary cross-entropy loss
         criterion = torch.nn.NLLLoss()
 
-
         optimizer = eval("torch.optim." + options.optimizer)(model.parameters(), options.learning_rate)
 
-
-        label_encoder = LabelEncoder()
         onehot_encoder = OneHotEncoder(sparse=False)
 
         # Prepare for label encoding
@@ -122,7 +125,7 @@ def main(options):
         for epoch_i in range(options.epochs):
             logging.info("At {0}-th epoch.".format(epoch_i))
             train_loss = 0.0
-
+            correct_cnt = 0.0
             for it, train_data in enumerate(train_loader):
                 data_dic = train_data
 
@@ -131,24 +134,32 @@ def main(options):
                 else:
                     imgs, labels = Variable(data_dic['image']), Variable(data_dic['label'])
 
-                print "labels"
-                print labels
-                integer_encoded = label_encoder.fit_transform(labels)
-
-                # binary encode
-                integer_encoded = integer_encoded.reshape(len(integer_encoded), 1)
-                onehot_encoded = onehot_encoder.fit_transform(integer_encoded)
-
-                train_output = model(imgs)
-                loss = criterion(train_output, onehot_encoded)
+                # add channel dimension: (batch_size, D, H ,W) to (batch_size, 1, D, H ,W)
+                # since 3D convolution requires 5D tensors
+                input_imgs = imgs.view(options.batch_size, 1, trg_size[0], trg_size[1], trg_size[2])
+                integer_encoded = labels.data.cpu().numpy()
+                # target should be LongTensor in loss function
+                ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
+                if use_cuda:
+                    ground_truth = ground_truth.cuda()
+                train_output = model(input_imgs)
+                train_prob_loss = F.log_softmax(train_output, dim=1)
+                train_prob_predict = F.softmax(train_output, dim=1)
+                _, predict = train_prob_predict.topk(1)
+                loss = criterion(train_prob_loss, ground_truth)
                 train_loss += loss
+                correct_cnt += (predict.squeeze(1) == ground_truth).sum()
+                accuracy = float(correct_cnt) / len(ground_truth)
                 logging.debug("loss at batch {0}: {1}".format(it, loss.data[0]))
+                logging.debug("accuracy at batch {0}: {1}".format(it, accuracy))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
             train_avg_loss = train_loss / (len(dset_train) / options.batch_size)
+            train_avg_acu = float(correct_cnt) / len(dset_train)
             logging.info("Average training loss is {0} at the end of epoch {1}".format(train_avg_loss.data[0], epoch_i))
+            logging.info("Average training accuracy is {0} at the end of epoch {1}".format(train_avg_acu, epoch_i))
             
             # validation -- this is a crude esitmation because there might be some paddings at the end
             dev_loss = 0.0
@@ -161,17 +172,26 @@ def main(options):
                 else:
                     imgs, labels = Variable(data_dic['image']), Variable(data_dic['label'])
 
-
-                test_output = model(imgs)
-                loss = criterion(test_output, labels)
+                input_imgs = imgs.view(options.batch_size, 1, trg_size[0], trg_size[1], trg_size[2])
+                integer_encoded = labels.data.cpu().numpy()
+                ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
+                if use_cuda:
+                    ground_truth = ground_truth.cuda()
+                test_output = model(input_imgs)
+                test_prob_loss = F.log_softmax(test_output, dim=1)
+                test_prob_predict = F.softmax(test_output, dim=1)
+                _, predict = test_prob_predict.topk(1)
+                loss = criterion(test_prob_loss, ground_truth)
                 dev_loss += loss
+                correct_cnt += (predict.squeeze(1) == ground_truth).sum()
+
             dev_avg_loss = dev_loss / (len(dset_test) / options.batch_size)
+            dev_avg_acu = float(correct_cnt) / len(dset_test)
             logging.info("Average validation loss is {0} at the end of epoch {1}".format(dev_avg_loss.data[0], epoch_i))
-            
-            if testing_accuracy > best_accuracy:
-                best_accuracy = testing_accuracy
-                if options.save is not None:
-                    torch.save(model.state_dict(), options.save )
+            logging.info("Average validation accuracy is {0} at the end of epoch {1}".format(dev_avg_acu, epoch_i))
+
+            torch.save(model.state_dict(), open(options.save + ".nll_{0:.2f}.epoch_{1}".format(dev_avg_loss.data[0], epoch_i), 'wb'))
+
             last_dev_avg_loss = dev_avg_loss
 
 

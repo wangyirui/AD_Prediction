@@ -1,10 +1,11 @@
 import nibabel as nib
+import os
 from torch.utils.data import Dataset
 
 class AD_Dataset(Dataset):
     """labeled Faces in the Wild dataset."""
     
-    def __init__(self, root_dir, data_file, transform=None, data_augmentation=False):
+    def __init__(self, root_dir, data_file, transform=None):
         """
         Args:
             root_dir (string): Directory of all the images.
@@ -15,7 +16,6 @@ class AD_Dataset(Dataset):
         self.root_dir = root_dir
         self.data_file = data_file
         self.transform = transform
-        self.data_augmentation = data_augmentation
     
     def __len__(self):
         return sum(1 for line in open(self.data_file))
@@ -24,17 +24,17 @@ class AD_Dataset(Dataset):
         df = open(self.data_file)
         lines = df.readlines()
         lst = lines[idx].split()
-        image_path = os.path.join(self.root_dir, lst[0])
+        img_name = lst[0]
+        img_label = lst[1]
+        image_path = os.path.join(self.root_dir, img_name)
         image = nib.load(image_path)
 
-        if self.data_augmentation:
-            image = data_augmentation(image)
         
-        if label == 'Normal':
+        if img_label == 'Normal':
             label = 0
-        elif label == 'AD':
+        elif img_label == 'AD':
             label = 2
-        elif label == 'MCI':
+        elif img_label == 'MCI':
             label = 1
 
         if self.transform:

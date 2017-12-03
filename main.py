@@ -65,7 +65,7 @@ def main(options):
     if options.network_type == 'AlexNet':
         trg_size = (224, 224, 224)
     else:
-        trg_size = (20, 20, 20)
+        trg_size = (50, 50, 50)
         
     transformations = transforms.Compose([CustomResize(options.network_type, trg_size),
                                           CustomToTensor(options.network_type)

@@ -21,46 +21,36 @@ class ResNet(nn.Module):
 
 	def __init__(self):
 		super(ResNet, self).__init__()
-		self.conv1_0 = nn.Conv3d( in_channels = 1,
+		self.conv1_0 = nn.Conv3d(in_channels = 1,
 								out_channels = 32,
 								kernel_size = 3,
 								stride = 1,
 								padding = 1)
-		self.conv1 = nn.Conv3d( in_channels = 32,
+		self.conv1_1 = nn.Conv3d( in_channels = 32,
 								out_channels = 32,
 								kernel_size = 3,
 								stride = 1,
 								padding = 1)
-		self.bn1 = nn.BatchNorm3d( num_features = 32)
-		self.conv2_0 = nn.Conv3d( in_channels = 32,
+		self.bn1 = nn.BatchNorm3d(num_features = 32)
+		self.conv2_0 = nn.Conv3d(in_channels = 32,
 								out_channels = 64,
 								kernel_size = 3,
 								stride = 2,
 								padding = 1)
-		self.conv2_1 = nn.Conv3d( in_channels = 64,
-								out_channels = 64,
-								kernel_size = 3,
-								stride = 1,
-								padding = 1)
-		self.conv2_2 = nn.Conv3d(in_channels = 64,
+		self.conv2_1 = nn.Conv3d(in_channels = 64,
 								out_channels = 64,
 								kernel_size = 3,
 								stride = 2,
 								padding = 1)
 		self.sideway1 = Sideway(features = 64)
 		self.bn2 = nn.BatchNorm3d(num_features = 64)
-		self.conv3_0 = nn.Conv3d( in_channels =64,
-								out_channels = 128,
-								kernel_size = 3,
-								stride = 2,
-								padding =1)
-		self.conv3_1 = nn.Conv3d( in_channels = 128,
+		self.conv3 = nn.Conv3d( in_channels =64,
 								out_channels = 128,
 								kernel_size = 3,
 								stride = 2,
 								padding =1)
 		self.sideway2 = Sideway(features = 128)
-		self.pool = nn.MaxPool3d(	kernel_size = 7,
+		self.pool = nn.MaxPool3d(kernel_size = 7,
 								stride = 1)
 		self.fc1 = nn.Linear(in_features = 216, 
 							 out_features = 128)
@@ -70,15 +60,15 @@ class ResNet(nn.Module):
 
 
 	def forward(self, out):
-		out = F.relu(self.bn1(self.conv0(out)))
-		out = F.relu(self.bn1(self.conv1(out)))
+		out = F.relu(self.bn1(self.conv1_0(out)))
+		out = F.relu(self.bn1(self.conv1_1(out)))
 		out = self.conv2_0(out)
 		out_s = self.sideway1(out)
 		out += out_s
 		out_s = self.sideway1(out)
 		out += out_s
 		out = F.relu(self.bn2(out))
-		out = self.conv2(out)
+		out = self.conv2_1(out)
 		out_s = self.sideway1(out)
 		out += out_s
 		out_s = self.sideway1(out)

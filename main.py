@@ -65,7 +65,7 @@ def main(options):
     if options.network_type == 'AlexNet':
         trg_size = (224, 224, 224)
     else:
-        trg_size = (110, 110, 110)
+        trg_size = (50, 50, 50)
         
     transformations = transforms.Compose([CustomResize(options.network_type, trg_size),
                                           CustomToTensor(options.network_type)
@@ -112,7 +112,7 @@ def main(options):
             model = ResNet()
 
         if use_cuda > 0:
-            model.cuda()
+            model = torch.nn.DataParallel(model, device_ids=options.gpuid).cuda()
         else:
             model.cpu()
 

@@ -32,7 +32,6 @@
 012_S_1133.nii Normal
 133_S_0488.nii Normal
 109_S_1343.nii MCI
-128_S_0229.nii Normal
 013_S_0699.nii AD
 114_S_0979.nii AD
 082_S_1079.nii AD
@@ -170,7 +169,6 @@
 024_S_1400.nii MCI
 073_S_0445.nii MCI
 012_S_0712.nii AD
-130_S_0449.nii MCI
 128_S_0608.nii MCI
 018_S_0406.nii MCI
 129_S_0778.nii Normal

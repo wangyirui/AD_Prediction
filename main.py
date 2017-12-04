@@ -117,7 +117,7 @@ def main(options):
             model.cpu()
 
         # Binary cross-entropy loss
-        criterion = torch.nn.NLLLoss()
+        criterion = torch.nn.CrossEntropyLoss()
 
         optimizer = eval("torch.optim." + options.optimizer)(model.parameters(), options.learning_rate)
 

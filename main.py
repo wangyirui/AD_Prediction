@@ -45,6 +45,10 @@ parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")  
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
+parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
+                    help='momentum')
+parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
+                    metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument("--estop", default=1e-2, type=float,
                     help="Early stopping criteria on the development set. (default=1e-2)")               
 parser.add_argument("--batch_size", default=1, type=int,
@@ -112,14 +116,17 @@ def main(options):
             model = ResNet()
 
         if use_cuda > 0:
-            model.cpu()
+            model.cuda()
         else:
             model.cpu()
 
         # Binary cross-entropy loss
         criterion = torch.nn.CrossEntropyLoss()
 
-        optimizer = eval("torch.optim." + options.optimizer)(model.parameters(), options.learning_rate)
+        lr = options.learning_rate
+        optimizer = eval("torch.optim." + options.optimizer)(model.parameters(), lr,
+                                                             momentum=options.momentum,
+                                                             weight_decay=options.weight_decay)
 
         # Prepare for label encoding
         last_dev_avg_loss = float("inf")
@@ -130,6 +137,7 @@ def main(options):
             logging.info("At {0}-th epoch.".format(epoch_i))
             train_loss = 0.0
             correct_cnt = 0.0
+            model.train()
             for it, train_data in enumerate(train_loader):
                 data_dic = train_data
 
@@ -148,16 +156,16 @@ def main(options):
                 if use_cuda:
                     ground_truth = ground_truth.cuda()
                 train_output = model(img_input)
-                train_prob_loss = F.log_softmax(train_output, dim=1)
+                # train_prob_loss = F.log_softmax(train_output, dim=1)
                 train_prob_predict = F.softmax(train_output, dim=1)
                 _, predict = train_prob_predict.topk(1)
-                loss = criterion(train_prob_loss, ground_truth)
+                loss = criterion(train_output, ground_truth)
                 train_loss += loss
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
                 correct_cnt += correct_this_batch
                 accuracy = float(correct_this_batch) / len(ground_truth)
-                logging.info("loss at batch {0}: {1:.5f}".format(it, loss.data[0]))
-                logging.info("accuracy at batch {0}: {1:.5f}".format(it, accuracy))
+                logging.info("batch {0} training loss is : {1:.5f}".format(it, loss.data[0]))
+                logging.info("batch {0} training accuracy is : {1:.5f}".format(it, accuracy))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -170,6 +178,7 @@ def main(options):
             # validation -- this is a crude esitmation because there might be some paddings at the end
             dev_loss = 0.0
             correct_cnt = 0.0
+            model.eval()
             for it, test_data in enumerate(test_loader):
                 data_dic = test_data
 
@@ -184,16 +193,16 @@ def main(options):
                 if use_cuda:
                     ground_truth = ground_truth.cuda()
                 test_output = model(img_input)
-                test_prob_loss = F.log_softmax(test_output, dim=1)
+                # test_prob_loss = F.log_softmax(test_output, dim=1)
                 test_prob_predict = F.softmax(test_output, dim=1)
                 _, predict = test_prob_predict.topk(1)
-                loss = criterion(test_prob_loss, ground_truth)
+                loss = criterion(test_output, ground_truth)
                 dev_loss += loss
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
                 correct_cnt += (predict.squeeze(1) == ground_truth).sum()
                 accuracy = float(correct_this_batch) / len(ground_truth)
-                logging.info("loss at batch {0}: {1:.5f}".format(it, loss.data[0]))
-                logging.info("accuracy at batch {0}: {1:.5f}".format(it, accuracy))
+                logging.info("batch {0} dev loss is : {1:.5f}".format(it, loss.data[0]))
+                logging.info("batch {0} dev accuracy is : {1:.5f}".format(it, accuracy))
 
             dev_avg_loss = dev_loss / (len(dset_test) / options.batch_size)
             dev_avg_acu = float(correct_cnt) / len(dset_test)

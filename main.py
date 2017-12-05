@@ -60,6 +60,7 @@ parser.add_argument("--gpuid", default=[0], nargs='+', type=int,
 # feel free to add more arguments as you need
 
 
+
 def main(options):
     # Path configuration
     TRAINING_PATH = 'train.txt'
@@ -157,9 +158,10 @@ def main(options):
                     ground_truth = ground_truth.cuda()
                 train_output = model(img_input)
                 # train_prob_loss = F.log_softmax(train_output, dim=1)
-                train_prob_predict = F.softmax(train_output, dim=1)
-                _, predict = train_prob_predict.topk(1)
+                # train_prob_predict = F.softmax(train_output, dim=1)
+                _, predict = train_output.topk(1)
                 loss = criterion(train_output, ground_truth)
+
                 train_loss += loss
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
                 correct_cnt += correct_this_batch
@@ -194,8 +196,8 @@ def main(options):
                     ground_truth = ground_truth.cuda()
                 test_output = model(img_input)
                 # test_prob_loss = F.log_softmax(test_output, dim=1)
-                test_prob_predict = F.softmax(test_output, dim=1)
-                _, predict = test_prob_predict.topk(1)
+                # test_prob_predict = F.softmax(test_output, dim=1)
+                _, predict = test_output.topk(1)
                 loss = criterion(test_output, ground_truth)
                 dev_loss += loss
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum()

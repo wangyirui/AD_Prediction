@@ -15,11 +15,11 @@ class CustomResize(object):
         self.network_type = network_type
 
     def __call__(self, img):
-            resized_img = self.resize_image(img, self.trg_size)
+        resized_img = self.resize_image(img, self.trg_size)
         return resized_img
 
     def resize_image(self, img, trg_size):
-        img_array = np.asarray(img.get_data())
+        img_array = np.asarray(img)
         res = resize(img_array, trg_size, mode='reflect', anti_aliasing=False, preserve_range=True)
 
         # type check

@@ -79,16 +79,16 @@ def main(options):
     elif options.network_type == 'ResNet3D':
         trg_size = (110, 110, 110)
     elif options.network_type == 'ResNet2D':
-        trg_size = (110, 110)
+        trg_size = (224, 224)
     
-    if options.network_type == "AlexNet3D":
+    if options.network_type == "AlexNet3D" or "ResNet3D":
         transformations = transforms.Compose([CustomResize(options.network_type, trg_size),
                                               CustomToTensor(options.network_type)
                                         ])
-        dset_train = AD_Dataset(IMG_PATH, TRAINING_PATH, transformations)
-        dset_test = AD_Dataset(IMG_PATH, TESTING_PATH, transformations)
+        dset_train = AD_2DSlicesData(IMG_PATH, TRAINING_PATH, transformations)
+        dset_test = AD_2DSlicesData(IMG_PATH, TESTING_PATH, transformations)
 
-    elif options.network_type == 'AlexNet2D':
+    elif options.network_type == 'AlexNet2D' or "ResNet2D":
         transformations = transforms.Compose([transforms.Resize(trg_size, Image.BICUBIC),
                                               transforms.RandomHorizontalFlip(),
                                               transforms.ToTensor()
@@ -146,7 +146,7 @@ def main(options):
 
         lr = options.learning_rate
         optimizer = eval("torch.optim." + options.optimizer)(model.parameters(), lr,
-                                                             momentum=options.momentum,
+                                                             #momentum=options.momentum,
                                                              weight_decay=options.weight_decay)
         # Prepare for label encoding
         last_dev_avg_loss = float("inf")
@@ -168,7 +168,7 @@ def main(options):
 
                 # add channel dimension: (batch_size, D, H ,W) to (batch_size, 1, D, H ,W)
                 # since 3D convolution requires 5D tensors
-                img_input = imgs.unsqueeze(1)
+                img_input = imgs#.unsqueeze(1)
 
                 integer_encoded = labels.data.cpu().numpy()
                 # target should be LongTensor in loss function
@@ -207,7 +207,7 @@ def main(options):
                 else:
                     imgs, labels = Variable(data_dic['image'], volatile=True), Variable(data_dic['label'], volatile=True)
 
-                img_input = imgs.unsqueeze(1)
+                img_input = imgs#.unsqueeze(1)
                 integer_encoded = labels.data.cpu().numpy()
                 ground_truth = Variable(torch.from_numpy(integer_encoded), volatile=True).long()
                 if use_cuda:

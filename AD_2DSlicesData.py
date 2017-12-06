@@ -4,6 +4,7 @@ from torch.utils.data import Dataset
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.transform import resize 
+from PIL import Image
 
 
 AX_F = 0.32
@@ -52,6 +53,7 @@ class AD_2DSlicesData(Dataset):
             label = 1
 
         image = axKeySlice(image)
+        image = Image.fromarray(image, 'RGB')
         if self.transform:
             image = self.transform(image)
 

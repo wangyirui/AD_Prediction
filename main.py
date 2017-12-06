@@ -100,8 +100,8 @@ def main(options):
                              )
 
     use_cuda = (len(options.gpuid) >= 1)
-    if options.gpuid:
-        cuda.set_device(options.gpuid[0])
+    # if options.gpuid:
+    #     cuda.set_device(options.gpuid[0])
 
     # Training process
     if options.load is None:
@@ -112,7 +112,7 @@ def main(options):
             model = ResNet()
 
         if use_cuda > 0:
-            model = torch.nn.DataParallel(model, device_ids=options.gpuid).cuda()
+            model = nn.DataParallel(model, device_ids=options.gpuid).cuda()
         else:
             model.cpu()
 

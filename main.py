@@ -79,7 +79,7 @@ def main(options):
     elif options.network_type == 'ResNet3D':
         trg_size = (110, 110, 110)
     elif options.network_type == 'ResNet2D':
-        trg_size = (110, 110)
+        trg_size = (224, 224)
     
     if options.network_type == "AlexNet3D":
         transformations = transforms.Compose([CustomResize(options.network_type, trg_size),

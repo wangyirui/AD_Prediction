@@ -29,6 +29,16 @@ class AlexNet(nn.Module):
             nn.Linear(4096, num_classes),
         )
 
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        for weight in self.parameters():
+            weight.data.uniform_(-0.1, 0.1)
+
+
+
+
+
     def forward(self, x):
         x = self.features(x)
         x = x.view(x.size(0), 256 * 6 * 6 * 6)

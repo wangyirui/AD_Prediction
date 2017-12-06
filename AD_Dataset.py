@@ -33,9 +33,9 @@ class AD_Dataset(Dataset):
         if img_label == 'Normal':
             label = 0
         elif img_label == 'AD':
-            label = 2
-        elif img_label == 'MCI':
             label = 1
+        elif img_label == 'MCI':
+            label = 2
 
         if self.transform:
             image = self.transform(image)

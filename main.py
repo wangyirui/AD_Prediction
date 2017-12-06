@@ -23,8 +23,13 @@ from custom_transform import CustomResize
 from custom_transform import CustomToTensor
 
 from AD_Dataset import AD_Dataset
-from ResNet import ResNet
-from AlexNet import AlexNet
+from AD_2DSlicesData import AD_2DSlicesData
+
+from AlexNet2D import alexnet
+from AlexNet3D import AlexNet
+
+import ResNet2D
+import ResNet3D
 
 
 logging.basicConfig(
@@ -33,7 +38,7 @@ logging.basicConfig(
 
 parser = argparse.ArgumentParser(description="Starter code for JHU CS661 Computer Vision HW3.")
 
-parser.add_argument("--network_type", "--nt", default="AlexNet", choices=["AlexNet", "ResNet"],
+parser.add_argument("--network_type", "--nt", default="AlexNet2D", choices=["AlexNet2D", "AlexNet3D", "ResNet2D", "ResNet3D"],
                     help="Deep network type. (default=AlexNet)")
 parser.add_argument("--load",
                     help="Load saved network weights.")
@@ -45,6 +50,10 @@ parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")  
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
+parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
+                    help='momentum')
+parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
+                    metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument("--estop", default=1e-2, type=float,
                     help="Early stopping criteria on the development set. (default=1e-2)")               
 parser.add_argument("--batch_size", default=1, type=int,
@@ -56,24 +65,36 @@ parser.add_argument("--gpuid", default=[0], nargs='+', type=int,
 # feel free to add more arguments as you need
 
 
+
 def main(options):
     # Path configuration
     TRAINING_PATH = 'train.txt'
     TESTING_PATH = 'test.txt'
     IMG_PATH = './Image'
 
-    if options.network_type == 'AlexNet':
+    if options.network_type == 'AlexNet3D':
         trg_size = (224, 224, 224)
-    else:
-        trg_size = (50, 50, 50)
-        
-    transformations = transforms.Compose([CustomResize(options.network_type, trg_size),
-                                          CustomToTensor(options.network_type)
-                                    ])
+    elif options.network_type == 'AlexNet2D':
+        trg_size = (224, 224)
+    elif options.network_type == 'ResNet3D':
+        trg_size = (110, 110, 110)
+    elif options.network_type == 'ResNet2D':
+        trg_size = (110, 110)
+    
+    if options.network_type == "AlexNet3D":
+        transformations = transforms.Compose([CustomResize(options.network_type, trg_size),
+                                              CustomToTensor(options.network_type)
+                                        ])
+        dset_train = AD_Dataset(IMG_PATH, TRAINING_PATH, transformations)
+        dset_test = AD_Dataset(IMG_PATH, TESTING_PATH, transformations)
 
-
-    dset_train = AD_Dataset(IMG_PATH, TRAINING_PATH, transformations)
-    dset_test = AD_Dataset(IMG_PATH, TESTING_PATH, transformations)
+    elif options.network_type == 'AlexNet2D':
+        transformations = transforms.Compose([transforms.Resize(trg_size, Image.BICUBIC),
+                                              transforms.RandomHorizontalFlip(),
+                                              transforms.ToTensor()
+                                              ])
+        dset_train = AD_2DSlicesData(IMG_PATH, TRAINING_PATH, transformations)
+        dset_test = AD_2DSlicesData(IMG_PATH, TESTING_PATH, transformations)
 
     # Use argument load to distinguish training and testing
     if options.load is None:
@@ -106,10 +127,14 @@ def main(options):
     # Training process
     if options.load is None:
         # Initial the model
-        if options.network_type == 'AlexNet':
+        if options.network_type == 'AlexNet3D':
             model = AlexNet()
-        else:
-            model = ResNet()
+        elif options.network_type == 'AlexNet2D':
+            model = alexnet(pretrained=True)
+        elif options.network_type == 'ResNet2D':
+            model = ResNet2D.resnet152(pretrained=True)
+        elif options.network_type == 'ResNet3D':
+            model = ResNet3D.ResNet()
 
         if use_cuda > 0:
             model = nn.DataParallel(model, device_ids=options.gpuid).cuda()
@@ -117,10 +142,12 @@ def main(options):
             model.cpu()
 
         # Binary cross-entropy loss
-        criterion = torch.nn.NLLLoss()
+        criterion = torch.nn.CrossEntropyLoss()
 
-        optimizer = eval("torch.optim." + options.optimizer)(model.parameters(), options.learning_rate)
-
+        lr = options.learning_rate
+        optimizer = eval("torch.optim." + options.optimizer)(model.parameters(), lr,
+                                                             momentum=options.momentum,
+                                                             weight_decay=options.weight_decay)
         # Prepare for label encoding
         last_dev_avg_loss = float("inf")
         best_accuracy = float("-inf")
@@ -130,6 +157,7 @@ def main(options):
             logging.info("At {0}-th epoch.".format(epoch_i))
             train_loss = 0.0
             correct_cnt = 0.0
+            model.train()
             for it, train_data in enumerate(train_loader):
                 data_dic = train_data
 
@@ -148,16 +176,16 @@ def main(options):
                 if use_cuda:
                     ground_truth = ground_truth.cuda()
                 train_output = model(img_input)
-                train_prob_loss = F.log_softmax(train_output, dim=1)
                 train_prob_predict = F.softmax(train_output, dim=1)
                 _, predict = train_prob_predict.topk(1)
-                loss = criterion(train_prob_loss, ground_truth)
+                loss = criterion(train_output, ground_truth)
+
                 train_loss += loss
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
                 correct_cnt += correct_this_batch
                 accuracy = float(correct_this_batch) / len(ground_truth)
-                logging.info("loss at batch {0}: {1:.5f}".format(it, loss.data[0]))
-                logging.info("accuracy at batch {0}: {1:.5f}".format(it, accuracy))
+                logging.info("batch {0} training loss is : {1:.5f}".format(it, loss.data[0]))
+                logging.info("batch {0} training accuracy is : {1:.5f}".format(it, accuracy))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -170,6 +198,7 @@ def main(options):
             # validation -- this is a crude esitmation because there might be some paddings at the end
             dev_loss = 0.0
             correct_cnt = 0.0
+            model.eval()
             for it, test_data in enumerate(test_loader):
                 data_dic = test_data
 
@@ -184,16 +213,15 @@ def main(options):
                 if use_cuda:
                     ground_truth = ground_truth.cuda()
                 test_output = model(img_input)
-                test_prob_loss = F.log_softmax(test_output, dim=1)
                 test_prob_predict = F.softmax(test_output, dim=1)
                 _, predict = test_prob_predict.topk(1)
-                loss = criterion(test_prob_loss, ground_truth)
+                loss = criterion(test_output, ground_truth)
                 dev_loss += loss
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
                 correct_cnt += (predict.squeeze(1) == ground_truth).sum()
                 accuracy = float(correct_this_batch) / len(ground_truth)
-                logging.info("loss at batch {0}: {1:.5f}".format(it, loss.data[0]))
-                logging.info("accuracy at batch {0}: {1:.5f}".format(it, accuracy))
+                logging.info("batch {0} dev loss is : {1:.5f}".format(it, loss.data[0]))
+                logging.info("batch {0} dev accuracy is : {1:.5f}".format(it, accuracy))
 
             dev_avg_loss = dev_loss / (len(dset_test) / options.batch_size)
             dev_avg_acu = float(correct_cnt) / len(dset_test)

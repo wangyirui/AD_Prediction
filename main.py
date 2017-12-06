@@ -23,6 +23,8 @@ from custom_transform import CustomResize
 from custom_transform import CustomToTensor
 
 from AD_Dataset import AD_Dataset
+from AD_2DSlicesData import AD_2DSlicesData
+
 from AlexNet2D import alexnet
 from AlexNet3D import AlexNet
 
@@ -83,15 +85,16 @@ def main(options):
         transformations = transforms.Compose([CustomResize(options.network_type, trg_size),
                                               CustomToTensor(options.network_type)
                                         ])
+        dset_train = AD_Dataset(IMG_PATH, TRAINING_PATH, transformations)
+        dset_test = AD_Dataset(IMG_PATH, TESTING_PATH, transformations)
+
     elif options.network_type == 'AlexNet2D':
         transformations = transforms.Compose([transforms.Resize(trg_size, Image.BICUBIC),
                                               transforms.RandomHorizontalFlip(),
                                               transforms.ToTensor()
                                               ])
-
-
-    dset_train = AD_Dataset(IMG_PATH, TRAINING_PATH, transformations)
-    dset_test = AD_Dataset(IMG_PATH, TESTING_PATH, transformations)
+        dset_train = AD_2DSlicesData(IMG_PATH, TRAINING_PATH, transformations)
+        dset_test = AD_2DSlicesData(IMG_PATH, TESTING_PATH, transformations)
 
     # Use argument load to distinguish training and testing
     if options.load is None:

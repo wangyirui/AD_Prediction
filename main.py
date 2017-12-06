@@ -23,8 +23,11 @@ from custom_transform import CustomResize
 from custom_transform import CustomToTensor
 
 from AD_Dataset import AD_Dataset
-from ResNet import ResNet
-from AlexNet import AlexNet
+from AlexNet2D import alexnet
+from AlexNet3D import AlexNet
+
+import ResNet2D
+import ResNet3D
 
 
 logging.basicConfig(
@@ -33,7 +36,7 @@ logging.basicConfig(
 
 parser = argparse.ArgumentParser(description="Starter code for JHU CS661 Computer Vision HW3.")
 
-parser.add_argument("--network_type", "--nt", default="AlexNet", choices=["AlexNet", "ResNet"],
+parser.add_argument("--network_type", "--nt", default="AlexNet2D", choices=["AlexNet2D", "AlexNet3D", "ResNet2D", "ResNet3D"],
                     help="Deep network type. (default=AlexNet)")
 parser.add_argument("--load",
                     help="Load saved network weights.")
@@ -67,14 +70,24 @@ def main(options):
     TESTING_PATH = 'test.txt'
     IMG_PATH = './Image'
 
-    if options.network_type == 'AlexNet':
+    if options.network_type == 'AlexNet3D':
         trg_size = (224, 224, 224)
-    else:
-        trg_size = (50, 50, 50)
-        
-    transformations = transforms.Compose([CustomResize(options.network_type, trg_size),
-                                          CustomToTensor(options.network_type)
-                                    ])
+    elif options.network_type == 'AlexNet2D':
+        trg_size = (224, 224)
+    elif options.network_type == 'ResNet3D':
+        trg_size = (110, 110, 110)
+    elif options.network_type == 'ResNet2D':
+        trg_size = (110, 110)
+    
+    if options.network_type == "AlexNet3D":
+        transformations = transforms.Compose([CustomResize(options.network_type, trg_size),
+                                              CustomToTensor(options.network_type)
+                                        ])
+    elif options.network_type == 'AlexNet2D':
+        transformations = transforms.Compose([transforms.Resize(trg_size, Image.BICUBIC),
+                                              transforms.RandomHorizontalFlip(),
+                                              transforms.ToTensor()
+                                              ])
 
 
     dset_train = AD_Dataset(IMG_PATH, TRAINING_PATH, transformations)
@@ -111,10 +124,14 @@ def main(options):
     # Training process
     if options.load is None:
         # Initial the model
-        if options.network_type == 'AlexNet':
+        if options.network_type == 'AlexNet3D':
             model = AlexNet()
-        else:
-            model = ResNet()
+        elif options.network_type == 'AlexNet2D':
+            model = alexnet(pretrained=True)
+        elif options.network_type == 'ResNet2D':
+            model = ResNet2D.resnet152(pretrained=True)
+        elif options.network_type == 'ResNet3D':
+            model = ResNet3D.ResNet()
 
         if use_cuda > 0:
             model.cuda()
@@ -128,7 +145,6 @@ def main(options):
         optimizer = eval("torch.optim." + options.optimizer)(model.parameters(), lr,
                                                              momentum=options.momentum,
                                                              weight_decay=options.weight_decay)
-
         # Prepare for label encoding
         last_dev_avg_loss = float("inf")
         best_accuracy = float("-inf")
@@ -157,9 +173,8 @@ def main(options):
                 if use_cuda:
                     ground_truth = ground_truth.cuda()
                 train_output = model(img_input)
-                # train_prob_loss = F.log_softmax(train_output, dim=1)
-                # train_prob_predict = F.softmax(train_output, dim=1)
-                _, predict = train_output.topk(1)
+                train_prob_predict = F.softmax(train_output, dim=1)
+                _, predict = train_prob_predict.topk(1)
                 loss = criterion(train_output, ground_truth)
 
                 train_loss += loss
@@ -195,9 +210,8 @@ def main(options):
                 if use_cuda:
                     ground_truth = ground_truth.cuda()
                 test_output = model(img_input)
-                # test_prob_loss = F.log_softmax(test_output, dim=1)
-                # test_prob_predict = F.softmax(test_output, dim=1)
-                _, predict = test_output.topk(1)
+                test_prob_predict = F.softmax(test_output, dim=1)
+                _, predict = test_prob_predict.topk(1)
                 loss = criterion(test_output, ground_truth)
                 dev_loss += loss
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum()

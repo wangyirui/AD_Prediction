@@ -326,4 +326,3 @@
 014_S_0356.nii AD
 082_S_0640.nii Normal
 130_S_1337.nii AD
-

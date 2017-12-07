@@ -132,7 +132,8 @@ def main(options):
             model.cpu()
 
         # Binary cross-entropy loss
-        criterion = torch.nn.CrossEntropyLoss()
+        # criterion = torch.nn.CrossEntropyLoss()
+        criterion = torch.nn.BCELoss()
 
         lr = options.learning_rate
         optimizer = eval("torch.optim." + options.optimizer)(model.classifier.parameters(), lr)
@@ -167,6 +168,7 @@ def main(options):
                 train_output = model(imgs)
                 train_prob_predict = F.softmax(train_output, dim=1)
                 _, predict = train_prob_predict.topk(1)
+                
                 loss = criterion(train_output, ground_truth)
 
                 train_loss += loss

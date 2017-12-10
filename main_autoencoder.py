@@ -15,6 +15,8 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 
+parser = argparse.ArgumentParser(description="Starter code for AutoEncoder")
+
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
@@ -27,12 +29,14 @@ parser.add_argument("--gpuid", default=[0], nargs='+', type=int,
                     help="ID of gpu device to use. Empty implies cpu usage.")
 parser.add_argument("--num_classes", default=2, type=int,
                     help="Number of classes.")
+parser.add_argument("--epochs", default=20, type=int,
+                    help="Epochs through the data. (default=20)")  
 
 def main(options):
 
     if options.num_classes == 2:
         TRAINING_PATH = 'train_2classes.txt'
-    else options.num_classes == 3:
+    else:
         TRAINING_PATH = 'train.txt'
     IMG_PATH = './Image'
 
@@ -63,18 +67,20 @@ def main(options):
 
     train_loss = 0.
     for epoch in range(options.epochs):
-        print("At {0}-th epoch.".format(epoch_i))
-        for i, batch in enumerate(train_loader):
-            output, mean_activitaion = autoencoder(batch)
-            loss = mean_square_loss(batch, output) + kl_div_loss(mean_activitaion, sparsity)
-            train_loss += loss
-            logging.info("batch {0} training loss is : {1:.5f}".format(i, loss.data[0]))
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-        train_avg_loss = train_loss/len(train_loader)
+        print("At {0}-th epoch.".format(epoch))
+        for i, patches in enumerate(train_loader):
+            for j in range(0, len(patches), options.batch_size):
+                batch = patches[j:j+options.batch_size]
+                output, mean_activitaion = autoencoder(batch)
+                loss = mean_square_loss(batch, output) + kl_div_loss(mean_activitaion, sparsity)
+                train_loss += loss
+                logging.info("batch {0} training loss is : {1:.5f}".format(i, loss.data[0]))
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+        train_avg_loss = train_loss/len(train_loader*1000)
         print("Average training loss is {0:.5f} at the end of epoch {1}".format(train_avg_loss.data[0], epoch))
-    torch.save(model.state_dict(), open("autoencoder", 'wb'))
+    torch.save(model.state_dict(), open("autoencoder_model", 'wb'))
 
 if __name__ == "__main__":
   ret = parser.parse_known_args()

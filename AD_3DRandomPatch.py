@@ -24,7 +24,6 @@ class AD_3DRandomPatch(Dataset):
         """
         self.root_dir = root_dir
         self.data_file = data_file
-        self.transform = transform
     
     def __len__(self):
         return sum(1 for line in open(self.data_file))
@@ -51,7 +50,7 @@ def customToTensor(pic):
 
 
 def resize_image(img_array, trg_size):
-    res = resize(img_array, trg_size, mode='reflect', preserve_range=True)
+    res = resize(img_array, trg_size, mode='reflect', preserve_range=True, anti_aliasing=False)
     # type check
     if type(res) != np.ndarray:
         raise "type error!"

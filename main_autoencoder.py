@@ -69,8 +69,7 @@ def main(options):
     for epoch in range(options.epochs):
         print("At {0}-th epoch.".format(epoch))
         for i, patches in enumerate(train_loader):
-            for j in range(0, len(patches), options.batch_size):
-                batch = patches[j:j+options.batch_size]
+            for batch in patches:
                 output, mean_activitaion = autoencoder(batch)
                 loss = mean_square_loss(batch, output) + kl_div_loss(mean_activitaion, sparsity)
                 train_loss += loss

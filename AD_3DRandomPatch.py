@@ -16,13 +16,11 @@ NON_SAG = (0, 1)
 class AD_3DRandomPatch(Dataset):
     """labeled Faces in the Wild dataset."""
     
-    def __init__(self, root_dir, data_file, transform=None, slice = slice):
+    def __init__(self, root_dir, data_file):
         """
         Args:
             root_dir (string): Directory of all the images.
             data_file (string): File name of the train/test split file.
-            transform (callable, optional): Optional transform to be applied on a sample.
-            data_augmentation (boolean): Optional data augmentation.
         """
         self.root_dir = root_dir
         self.data_file = data_file

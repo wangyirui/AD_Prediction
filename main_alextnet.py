@@ -19,12 +19,14 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 import random
+from collections import Counter
 
 from custom_transform import CustomResize
 from custom_transform import CustomToTensor
 
 from AD_Dataset import AD_Dataset
 from AD_2DSlicesData import AD_2DSlicesData
+from AD_2DRandomSlicesData import AD_2DRandomSlicesData
 
 from AlexNet2D import alexnet
 from AlexNet3D import AlexNet
@@ -35,12 +37,9 @@ logging.basicConfig(
 
 parser = argparse.ArgumentParser(description="Starter code for JHU CS661 Computer Vision HW3.")
 
-parser.add_argument("--network_type", "--nt", default="AlexNet2D",
-                    choices=["AlexNet2D", "AlexNet3D", "ResNet2D", "ResNet3D"],
-                    help="Deep network type. (default=AlexNet)")
 parser.add_argument("--load",
                     help="Load saved network weights.")
-parser.add_argument("--save", default="best_model",
+parser.add_argument("--save", default="AlexNet",
                     help="Save network weights.")
 parser.add_argument("--augmentation", default=True, type=bool,
                     help="Save network weights.")
@@ -71,32 +70,21 @@ def main(options):
     TESTING_PATH = 'test_2classes.txt'
     IMG_PATH = './Image'
 
-    if options.network_type == 'AlexNet3D':
-        trg_size = (224, 224, 224)
-    elif options.network_type == 'AlexNet2D':
-        trg_size = (224, 224)
+    trg_size = (224, 224)
 
-    if options.network_type == "AlexNet3D":
-        transformations = transforms.Compose([CustomResize(options.network_type, trg_size),
-                                              CustomToTensor(options.network_type)
-                                              ])
-        dset_train = AD_Dataset(IMG_PATH, TRAINING_PATH, transformations)
-        dset_test = AD_Dataset(IMG_PATH, TESTING_PATH, transformations)
-
-    elif options.network_type == 'AlexNet2D':
-        transformations = transforms.Compose([transforms.Resize(trg_size, Image.BICUBIC),
+    transformations = transforms.Compose([transforms.Resize(trg_size, Image.BICUBIC),
                                               # transforms.RandomHorizontalFlip(),
                                               transforms.ToTensor()
                                               ])
-        dset_train = AD_2DSlicesData(IMG_PATH, TRAINING_PATH, transformations)
-        dset_test = AD_2DSlicesData(IMG_PATH, TESTING_PATH, transformations)
+    dset_train = AD_2DRandomSlicesData(IMG_PATH, TRAINING_PATH, transformations)
+    dset_test = AD_2DRandomSlicesData(IMG_PATH, TESTING_PATH, transformations)
 
     # Use argument load to distinguish training and testing
     if options.load is None:
         train_loader = DataLoader(dset_train,
                                   batch_size=options.batch_size,
                                   shuffle=True,
-                                  num_workers=1,
+                                  num_workers=4,
                                   drop_last=True
                                   )
     else:
@@ -104,7 +92,7 @@ def main(options):
         train_loader = DataLoader(dset_train,
                                   batch_size=options.batch_size,
                                   shuffle=False,
-                                  num_workers=1,
+                                  num_workers=4,
                                   drop_last=True
                                   )
 
@@ -122,10 +110,7 @@ def main(options):
     # Training process
     if options.load is None:
         # Initial the model
-        if options.network_type == 'AlexNet3D':
-            model = AlexNet()
-        elif options.network_type == 'AlexNet2D':
-            model = alexnet(pretrained=True)
+        model = alexnet(pretrained=True)
 
         if use_cuda > 0:
             model = model.cuda()
@@ -138,97 +123,90 @@ def main(options):
 
         lr = options.learning_rate
         optimizer = eval("torch.optim." + options.optimizer)(model.classifier.parameters(), lr)
-        # Prepare for label encoding
+
         last_dev_avg_loss = float("inf")
         best_accuracy = float("-inf")
 
-        plot_losses=[]
-
-        # main training loop
         for epoch_i in range(options.epochs):
+
             logging.info("At {0}-th epoch.".format(epoch_i))
-            train_loss = 0.0
-            correct_cnt = 0.0
-            model.train()
-            for it, train_data in enumerate(train_loader):
-                data_dic = train_data
-
-                if use_cuda:
-                    imgs, labels = Variable(data_dic['image']).cuda(), Variable(data_dic['label']).cuda()
-                else:
-                    imgs, labels = Variable(data_dic['image']), Variable(data_dic['label'])
-
-                # add channel dimension: (batch_size, D, H ,W) to (batch_size, 1, D, H ,W)
-                # # since 3D convolution requires 5D tensors
-                # img_input = imgs.unsqueeze(1)
-
-
-                integer_encoded = labels.data.cpu().numpy()
-                # target should be LongTensor in loss function
-                ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
-                if use_cuda:
-                    ground_truth = ground_truth.cuda()
-                train_output = model(imgs)
-                _, predict = train_output.topk(1)
-                loss = criterion(train_output, ground_truth)
-                train_loss += loss
-                correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
-                correct_cnt += correct_this_batch
-                accuracy = float(correct_this_batch) / len(ground_truth)
-                logging.info("batch {0} training loss is : {1:.5f}".format(it, loss.data[0]))
-                logging.info("batch {0} training accuracy is : {1:.5f}".format(it, accuracy))
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-
-            train_avg_loss = train_loss / (len(dset_train) / options.batch_size)
-            train_avg_acu = float(correct_cnt) / len(dset_train)
+            train_loss, correct_cnt = train(model, train_loader, use_cuda, criterion, optimizer)
+            # each instance in one batch has 3 views
+            train_avg_loss = train_loss / (len(dset_train) * 3 / options.batch_size)
+            train_avg_acu = float(correct_cnt) / (len(dset_train) * 3)
             logging.info(
                 "Average training loss is {0:.5f} at the end of epoch {1}".format(train_avg_loss.data[0], epoch_i))
             logging.info("Average training accuracy is {0:.5f} at the end of epoch {1}".format(train_avg_acu, epoch_i))
-            plot_losses.append(train_avg_loss.data[0])
 
-            # validation -- this is a crude esitmation because there might be some paddings at the end
-            dev_loss = 0.0
-            correct_cnt = 0.0
-            model.eval()
-            for it, test_data in enumerate(test_loader):
-                data_dic = test_data
-
-                if use_cuda:
-                    imgs, labels = Variable(data_dic['image'], volatile=True).cuda(), Variable(data_dic['label'],
-                                                                                               volatile=True).cuda()
-                else:
-                    imgs, labels = Variable(data_dic['image'], volatile=True), Variable(data_dic['label'],
-                                                                                        volatile=True)
-
-                # img_input = imgs.unsqueeze(1)
-                integer_encoded = labels.data.cpu().numpy()
-                ground_truth = Variable(torch.from_numpy(integer_encoded), volatile=True).long()
-                if use_cuda:
-                    ground_truth = ground_truth.cuda()
-                test_output = model(imgs)
-                _, predict = test_output.topk(1)
-                # predict = torch.round(test_output)
-                loss = criterion(test_output, ground_truth)
-                dev_loss += loss
-                correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
-                correct_cnt += (predict.squeeze(1) == ground_truth).sum()
-                accuracy = float(correct_this_batch) / len(ground_truth)
-                logging.info("batch {0} dev loss is : {1:.5f}".format(it, loss.data[0]))
-                logging.info("batch {0} dev accuracy is : {1:.5f}".format(it, accuracy))
-
-            dev_avg_loss = dev_loss / (len(dset_test) / options.batch_size)
+            correct_cnt = validate(model, test_loader, use_cuda, criterion)
             dev_avg_acu = float(correct_cnt) / len(dset_test)
-            logging.info(
-                "Average validation loss is {0:.5f} at the end of epoch {1}".format(dev_avg_loss.data[0], epoch_i))
             logging.info("Average validation accuracy is {0:.5f} at the end of epoch {1}".format(dev_avg_acu, epoch_i))
 
-            torch.save(model.state_dict(),
-                       open(options.save + ".nll_{0:.3f}.epoch_{1}".format(dev_avg_loss.data[0], epoch_i), 'wb'))
+            # torch.save(model.state_dict(),
+            #            open(options.save + ".nll_{0:.3f}.epoch_{1}".format(dev_avg_loss.data[0], epoch_i), 'wb'))
 
-            last_dev_avg_loss = dev_avg_loss
-    show_plot(plot_losses)
+def train(model, train_loader, use_cuda, criterion, optimizer):
+    # main training loop
+    train_loss = 0.0
+    correct_cnt = 0.0
+    model.train()
+    for it, train_data in enumerate(train_loader):
+        for data_dic in train_data:
+            if use_cuda:
+                imgs, labels = Variable(data_dic['image']).cuda(), Variable(data_dic['label']).cuda()
+            else:
+                imgs, labels = Variable(data_dic['image']), Variable(data_dic['label'])
+            integer_encoded = labels.data.cpu().numpy()
+            # target should be LongTensor in loss function
+            ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
+            if use_cuda:
+                ground_truth = ground_truth.cuda()
+            train_output = model(imgs)
+            _, predict = train_output.topk(1)
+            loss = criterion(train_output, ground_truth)
+            train_loss += loss
+            correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
+            correct_cnt += correct_this_batch
+            accuracy = float(correct_this_batch) / len(ground_truth)
+            logging.info("batch {0} training loss is : {1:.5f}".format(it, loss.data[0]))
+            logging.info("batch {0} training accuracy is : {1:.5f}".format(it, accuracy))
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+    return train_loss, correct_cnt
+
+
+
+def validate(model, test_loader, use_cuda, criterion):
+    # validation -- this is a crude estimation because there might be some paddings at the end
+    correct_cnt = 0.0
+    model.eval()
+    for it, test_data in enumerate(test_loader):
+        vote = []
+        for data_dic in test_data:
+            if use_cuda:
+                imgs, labels = Variable(data_dic['image'], volatile=True).cuda(), Variable(data_dic['label'],
+                                                                                           volatile=True).cuda()
+            else:
+                imgs, labels = Variable(data_dic['image'], volatile=True), Variable(data_dic['label'],
+                                                                                    volatile=True)
+            test_output = model(imgs)
+            _, predict = test_output.topk(1)
+            vote.append(predict)
+
+        vote = torch.cat(vote, 1)
+        final_vote, _ = torch.mode(vote, 1)
+        ground_truth = test_data[0]['label']
+        correct_this_batch = (final_vote.cpu().data == ground_truth).sum()
+        correct_cnt += correct_this_batch
+        accuracy = float(correct_this_batch) / len(ground_truth)
+
+        logging.info("batch {0} dev accuracy is : {1:.5f}".format(it, accuracy))
+
+    return correct_cnt
+
+
 
 
 def show_plot(points):
@@ -237,8 +215,6 @@ def show_plot(points):
     loc = ticker.MultipleLocator(base=0.2) # put ticks at regular intervals
     ax.yaxis.set_major_locator(loc)
     plt.plot(points)
-
-
 
 
 if __name__ == "__main__":

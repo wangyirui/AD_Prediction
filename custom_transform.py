@@ -19,7 +19,7 @@ class CustomResize(object):
         return resized_img
 
     def resize_image(self, img, trg_size):
-        img_array = np.asarray(img)
+        img_array = np.asarray(img.get_data())
         res = resize(img_array, trg_size, mode='reflect', anti_aliasing=False, preserve_range=True)
 
         # type check

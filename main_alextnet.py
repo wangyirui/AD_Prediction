@@ -16,6 +16,7 @@ from PIL import Image
 import torch.nn.functional as F
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 import random
 
@@ -66,8 +67,8 @@ parser.add_argument("--gpuid", default=[0], nargs='+', type=int,
 
 def main(options):
     # Path configuration
-    TRAINING_PATH = 'bi_train.txt'
-    TESTING_PATH = 'bi_test.txt'
+    TRAINING_PATH = 'train_2classes.txt'
+    TESTING_PATH = 'test_2classes.txt'
     IMG_PATH = './Image'
 
     if options.network_type == 'AlexNet3D':
@@ -84,7 +85,7 @@ def main(options):
 
     elif options.network_type == 'AlexNet2D':
         transformations = transforms.Compose([transforms.Resize(trg_size, Image.BICUBIC),
-                                              transforms.RandomHorizontalFlip(),
+                                              # transforms.RandomHorizontalFlip(),
                                               transforms.ToTensor()
                                               ])
         dset_train = AD_2DSlicesData(IMG_PATH, TRAINING_PATH, transformations)
@@ -95,7 +96,7 @@ def main(options):
         train_loader = DataLoader(dset_train,
                                   batch_size=options.batch_size,
                                   shuffle=True,
-                                  num_workers=4,
+                                  num_workers=1,
                                   drop_last=True
                                   )
     else:
@@ -103,20 +104,20 @@ def main(options):
         train_loader = DataLoader(dset_train,
                                   batch_size=options.batch_size,
                                   shuffle=False,
-                                  num_workers=4,
+                                  num_workers=1,
                                   drop_last=True
                                   )
 
     test_loader = DataLoader(dset_test,
                              batch_size=options.batch_size,
                              shuffle=False,
-                             num_workers=4,
+                             num_workers=1,
                              drop_last=True
                              )
 
     use_cuda = (len(options.gpuid) >= 1)
-    # if options.gpuid:
-    #     cuda.set_device(options.gpuid[0])
+    if options.gpuid:
+        cuda.set_device(options.gpuid[0])
 
     # Training process
     if options.load is None:
@@ -133,13 +134,15 @@ def main(options):
 
         # Binary cross-entropy loss
         # criterion = torch.nn.CrossEntropyLoss()
-        criterion = torch.nn.BCELoss()
+        criterion = torch.nn.NLLLoss()
 
         lr = options.learning_rate
         optimizer = eval("torch.optim." + options.optimizer)(model.classifier.parameters(), lr)
         # Prepare for label encoding
         last_dev_avg_loss = float("inf")
         best_accuracy = float("-inf")
+
+        plot_losses=[]
 
         # main training loop
         for epoch_i in range(options.epochs):
@@ -156,7 +159,7 @@ def main(options):
                     imgs, labels = Variable(data_dic['image']), Variable(data_dic['label'])
 
                 # add channel dimension: (batch_size, D, H ,W) to (batch_size, 1, D, H ,W)
-                # since 3D convolution requires 5D tensors
+                # # since 3D convolution requires 5D tensors
                 # img_input = imgs.unsqueeze(1)
 
 
@@ -166,11 +169,8 @@ def main(options):
                 if use_cuda:
                     ground_truth = ground_truth.cuda()
                 train_output = model(imgs)
-                train_prob_predict = F.softmax(train_output, dim=1)
-                _, predict = train_prob_predict.topk(1)
-                
+                _, predict = train_output.topk(1)
                 loss = criterion(train_output, ground_truth)
-
                 train_loss += loss
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
                 correct_cnt += correct_this_batch
@@ -186,6 +186,7 @@ def main(options):
             logging.info(
                 "Average training loss is {0:.5f} at the end of epoch {1}".format(train_avg_loss.data[0], epoch_i))
             logging.info("Average training accuracy is {0:.5f} at the end of epoch {1}".format(train_avg_acu, epoch_i))
+            plot_losses.append(train_avg_loss.data[0])
 
             # validation -- this is a crude esitmation because there might be some paddings at the end
             dev_loss = 0.0
@@ -207,8 +208,8 @@ def main(options):
                 if use_cuda:
                     ground_truth = ground_truth.cuda()
                 test_output = model(imgs)
-                test_prob_predict = F.softmax(test_output, dim=1)
-                _, predict = test_prob_predict.topk(1)
+                _, predict = test_output.topk(1)
+                # predict = torch.round(test_output)
                 loss = criterion(test_output, ground_truth)
                 dev_loss += loss
                 correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
@@ -227,6 +228,17 @@ def main(options):
                        open(options.save + ".nll_{0:.3f}.epoch_{1}".format(dev_avg_loss.data[0], epoch_i), 'wb'))
 
             last_dev_avg_loss = dev_avg_loss
+    show_plot(plot_losses)
+
+
+def show_plot(points):
+    plt.figure()
+    fig, ax = plt.subplots()
+    loc = ticker.MultipleLocator(base=0.2) # put ticks at regular intervals
+    ax.yaxis.set_major_locator(loc)
+    plt.plot(points)
+
+
 
 
 if __name__ == "__main__":

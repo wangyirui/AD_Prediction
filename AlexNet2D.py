@@ -31,7 +31,7 @@ class AlexNet(nn.Module):
         )
         self.classifier = nn.Sequential(
             nn.Dropout(),
-            nn.Linear(256 * 6 * 6, 4096),
+            nn.Linear(256 * 6 * 6, 4096),   
             nn.ReLU(inplace=True),
             nn.Dropout(),
             nn.Linear(4096, 4096),
@@ -59,5 +59,6 @@ def alexnet(pretrained=False, **kwargs):
         for p in model.features.parameters():
             p.requires_grad = False
 
-        model.classifier._modules['6'] = nn.Linear(4096, 2)
+    model.classifier.add_module('fc_out', nn.Linear(1000,2))
+    model.classifier.add_module('sigmoid', nn.LogSoftmax())
     return model

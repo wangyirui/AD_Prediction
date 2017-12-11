@@ -70,6 +70,7 @@ def main(options):
         print("At {0}-th epoch.".format(epoch))
         for i, patches in enumerate(train_loader):
             for batch in patches:
+                batch = Variable(batch).cuda()
                 output, mean_activitaion = autoencoder(batch)
                 loss = mean_square_loss(batch, output) + kl_div_loss(mean_activitaion, sparsity)
                 train_loss += loss

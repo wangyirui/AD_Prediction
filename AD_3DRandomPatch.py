@@ -26,18 +26,20 @@ class AD_3DRandomPatch(Dataset):
         self.data_file = data_file
     
     def __len__(self):
-        return sum(1 for line in open(self.data_file))
+        with open(self.data_file) as df:
+            summation = sum(1 for line in df)
+        return summation
     
     def __getitem__(self, idx):
-        df = open(self.data_file)
-        lines = df.readlines()
-        lst = lines[idx].split()
-        img_name = lst[0]
-        image_path = os.path.join(self.root_dir, img_name)
-        image = nib.load(image_path)
+        with open(self.data_file) as df:
+            lines = df.readlines()
+            lst = lines[idx].split()
+            img_name = lst[0]
+            image_path = os.path.join(self.root_dir, img_name)
+            image = nib.load(image_path)
 
-        image_array = resize_image(np.array(image.get_data()), (110, 110, 110))
-        patch_samples = getRandomPatches(image_array)
+            image_array = resize_image(np.array(image.get_data()), (110, 110, 110))
+            patch_samples = getRandomPatches(image_array)
         return patch_samples
 
 

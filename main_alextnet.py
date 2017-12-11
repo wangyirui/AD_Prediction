@@ -122,7 +122,7 @@ def main(options):
         criterion = torch.nn.NLLLoss()
 
         lr = options.learning_rate
-        optimizer = eval("torch.optim." + options.optimizer)(model.classifier.parameters(), lr)
+        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), lr)
 
         best_accuracy = float("-inf")
 

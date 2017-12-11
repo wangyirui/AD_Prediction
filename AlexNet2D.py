@@ -59,6 +59,10 @@ def alexnet(pretrained=False, **kwargs):
         for p in model.features.parameters():
             p.requires_grad = False
 
+        # fine-tune the last convolution layer
+        for p in model.features[10].parameters():
+            p.requires_grad = True
+
     model.classifier.add_module('fc_out', nn.Linear(1000,2))
     model.classifier.add_module('sigmoid', nn.LogSoftmax())
     return model

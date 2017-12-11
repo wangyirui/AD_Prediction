@@ -9,9 +9,9 @@ class AutoEncoder(nn.Module):
         self.decoder = nn.Linear(410, 343)
 
     def forward(self, out):
-        out = out.view(1, 343)
+        out = out.view(-1, 343)
         out = self.encoder(out)
         out = self.sparsify(out)
-        mean_activition = 1/410.*out.sum()
+        s_ = out
         out = self.decoder(out)
-        return out, mean_activition
+        return out, s_

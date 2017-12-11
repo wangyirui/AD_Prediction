@@ -48,12 +48,11 @@ def main(options):
                               num_workers = 4,
                               drop_last = True
                               )
-
     sparsity = 0.05
     beta = 0.5
 
     mean_square_loss = nn.MSELoss()
-    kl_div_loss = nn.KLDivLoss(reduce=False)
+    #kl_div_loss = nn.KLDivLoss(reduce=False)
 
     use_gpu = len(options.gpuid)>=1
     autoencoder = AutoEncoder()
@@ -69,19 +68,25 @@ def main(options):
     for epoch in range(options.epochs):
         print("At {0}-th epoch.".format(epoch))
         for i, patches in enumerate(train_loader):
-            patch_dict = patches['patch']
-            for batch in patch_dict:
+            if i==1:
+                break
+            patch = patches['patch']
+            for b, batch in patch:
                 batch = Variable(batch).cuda()
-                output, mean_activitaion = autoencoder(batch)
-                loss = mean_square_loss(batch, output) + kl_div_loss(mean_activitaion, sparsity)
+                output, s_ = autoencoder(batch)
+                loss1 = mean_square_loss(batch, output)
+                s = Variable(torch.ones(s_.shape)*sparsity).cuda()
+                loss2 = (s_*torch.log(s_/s+1e-8) + (1-s_)*torch.log((1-s_)/(1-s)+1e-8)).sum()/options.batch_size
+                #kl_div_loss(mean_activitaion, sparsity)
+                loss = loss1 + beta * loss2
                 train_loss += loss
-                logging.info("batch {0} training loss is : {1:.5f}".format(i, loss.data[0]))
+                logging.info("batch {0} training loss is : {1:.5f}, {2:.5f}".format(i*1000+b, loss1.data[0], loss2.data[0]))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-        train_avg_loss = train_loss/len(train_loader*1000)
+        train_avg_loss = train_loss/(len(train_loader)*1000)
         print("Average training loss is {0:.5f} at the end of epoch {1}".format(train_avg_loss.data[0], epoch))
-    torch.save(model.state_dict(), open("autoencoder_model", 'wb'))
+    torch.save(autoencoder.state_dict(), open("autoencoder_pretrained_model", 'wb'))
 
 if __name__ == "__main__":
   ret = parser.parse_known_args()

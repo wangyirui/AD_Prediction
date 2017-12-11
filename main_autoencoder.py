@@ -38,7 +38,7 @@ def main(options):
         TRAINING_PATH = 'train_2classes.txt'
     else:
         TRAINING_PATH = 'train.txt'
-    IMG_PATH = './Image'
+    IMG_PATH = './ImageNoSkull'
 
     dset_train = AD_3DRandomPatch(IMG_PATH, TRAINING_PATH)
 

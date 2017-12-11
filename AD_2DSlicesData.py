@@ -44,7 +44,7 @@ class AD_2DSlicesData(Dataset):
         img_label = lst[1]
         image_path = os.path.join(self.root_dir, img_name)
         image = nib.load(image_path)
-        
+
         if img_label == 'Normal':
             label = 0
         elif img_label == 'AD':
@@ -52,15 +52,14 @@ class AD_2DSlicesData(Dataset):
         elif img_label == 'MCI':
             label = 2
 
-        image = axKeySlice(image)
-        image = Image.fromarray(image, 'RGB')
+        image = sag3Slice(image)
+        image = Image.fromarray(image.astype(np.uint8), 'RGB')
         if self.transform:
             image = self.transform(image)
 
         sample = {'image': image, 'label': label}
         
         return sample
-
 
 def getSlice(image_array, mean_direc, fraction, section):
     mean_array = np.ndarray.mean(image_array, axis = mean_direc)

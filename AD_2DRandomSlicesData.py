@@ -58,7 +58,7 @@ class AD_2DRandomSlicesData(Dataset):
         SAGimageList = sagRandomSlice(image)
 
         for img2DList in (AXimageList, CORimageList, SAGimageList):
-            for image2D in img2DList
+            for image2D in img2DList:
                 image2D = Image.fromarray(image2D.astype(np.uint8), 'RGB')
                 if self.transform:
                     image2D = self.transform(image2D)
@@ -74,6 +74,10 @@ def getRandomSlice(image_array, mean_direc, fraction, section, step = 2):
     last_p = list(mean_array).index(filter(lambda x: x>0, mean_array)[-1])
     slice_p = int(round(first_p + (last_p - first_p)*fraction))
     slice_2Dimgs = []
+    slice_select_0 = None
+    slice_select_1 = None
+    slice_select_2 = None
+
     randomShift = random.randint(-18, 18)
     slice_p = slice_p + randomShift
     i = 0
@@ -112,6 +116,9 @@ def getRandom3Slices(image_array, mean_direc, fraction, section, step = 2):
     for j in range(len(randomShift)):
         slice_sp = slice_p + randomShift[j]
         i = 0
+        slice_select_0 = None
+        slice_select_1 = None
+        slice_select_2 = None
         for slice_i in range(slice_sp-step, slice_sp+step+1, step):
             slice_select = eval("image_array"+section)/1500.0*255
             exec("slice_select_"+str(i)+"=slice_select")

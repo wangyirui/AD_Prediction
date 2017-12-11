@@ -40,7 +40,8 @@ class AD_3DRandomPatch(Dataset):
 
             image_array = resize_image(np.array(image.get_data()), (110, 110, 110))
             patch_samples = getRandomPatches(image_array)
-        return patch_samples
+            patch_dict = {"patch": patch_samples}
+        return patch_dict
 
 
 def customToTensor(pic):

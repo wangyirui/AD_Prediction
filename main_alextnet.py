@@ -124,13 +124,15 @@ def main(options):
         lr = options.learning_rate
         optimizer = eval("torch.optim." + options.optimizer)(model.classifier.parameters(), lr)
 
-        last_dev_avg_loss = float("inf")
         best_accuracy = float("-inf")
+
+        train_loss_f = open("train_loss.txt", "w")
+        test_acu_f = open("test_accuracy.txt", "w")
 
         for epoch_i in range(options.epochs):
 
             logging.info("At {0}-th epoch.".format(epoch_i))
-            train_loss, correct_cnt = train(model, train_loader, use_cuda, criterion, optimizer)
+            train_loss, correct_cnt = train(model, train_loader, use_cuda, criterion, optimizer, train_loss_f)
             # each instance in one batch has 3 views
             train_avg_loss = train_loss / (len(dset_train) * 3 / options.batch_size)
             train_avg_acu = float(correct_cnt) / (len(dset_train) * 3)
@@ -138,14 +140,19 @@ def main(options):
                 "Average training loss is {0:.5f} at the end of epoch {1}".format(train_avg_loss.data[0], epoch_i))
             logging.info("Average training accuracy is {0:.5f} at the end of epoch {1}".format(train_avg_acu, epoch_i))
 
+
             correct_cnt = validate(model, test_loader, use_cuda, criterion)
             dev_avg_acu = float(correct_cnt) / len(dset_test)
             logging.info("Average validation accuracy is {0:.5f} at the end of epoch {1}".format(dev_avg_acu, epoch_i))
 
-            # torch.save(model.state_dict(),
-            #            open(options.save + ".nll_{0:.3f}.epoch_{1}".format(dev_avg_loss.data[0], epoch_i), 'wb'))
+            # write validation accuracy to file
+            test_acu_f.write("{0:.5f}\n".format(dev_avg_acu))
 
-def train(model, train_loader, use_cuda, criterion, optimizer):
+            if dev_avg_acu > best_accuracy:
+                best_accuracy = dev_avg_acu
+                torch.save(model.state_dict(), open(options.save, 'wb'))
+
+def train(model, train_loader, use_cuda, criterion, optimizer, train_loss_f):
     # main training loop
     train_loss = 0.0
     correct_cnt = 0.0
@@ -170,6 +177,10 @@ def train(model, train_loader, use_cuda, criterion, optimizer):
             accuracy = float(correct_this_batch) / len(ground_truth)
             logging.info("batch {0} training loss is : {1:.5f}".format(it, loss.data[0]))
             logging.info("batch {0} training accuracy is : {1:.5f}".format(it, accuracy))
+
+            # write the training loss to file
+            train_loss_f.write("{0:.5f}\n".format(loss.data[0]))
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()

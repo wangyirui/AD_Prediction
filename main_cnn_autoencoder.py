@@ -142,7 +142,7 @@ def main(options):
             loss = criterion(train_output, ground_truth)
 
             train_loss += loss
-            correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
+            correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
             correct_cnt += correct_this_batch
             accuracy = float(correct_this_batch) / len(ground_truth)
             logging.info("batch {0} training loss is : {1:.5f}".format(it, loss.data[0]))
@@ -180,7 +180,7 @@ def main(options):
             _, predict = test_prob_predict.topk(1)
             loss = criterion(test_output, ground_truth)
             dev_loss += loss
-            correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
+            correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
             correct_cnt += (predict.squeeze(1) == ground_truth).sum()
             accuracy = float(correct_this_batch) / len(ground_truth)
             logging.info("batch {0} dev loss is : {1:.5f}".format(it, loss.data[0]))

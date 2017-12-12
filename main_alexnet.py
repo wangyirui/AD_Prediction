@@ -28,7 +28,6 @@ from AD_Dataset import AD_Dataset
 from AD_Standard_2DSlicesData import AD_Standard_2DSlicesData
 
 from AlexNet2D import alexnet
-from AlexNet3D import AlexNet
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s',

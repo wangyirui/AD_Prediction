@@ -194,7 +194,7 @@ def main(options):
         logging.info("Average validation accuracy is {0:.5f} at the end of epoch {1}".format(dev_avg_acu, epoch_i))
 
 
-        if (abs(dev_avg_loss - last_dev_loss) <= options.estop) or ((epoch_i+1)%20==0):
+        if (abs(dev_avg_loss.data[0] - last_dev_loss) <= options.estop) or ((epoch_i+1)%20==0):
             torch.save(model.state_dict(), open("3DCNN_model_" + str(epoch_i), 'wb'))
         last_dev_loss = dev_avg_loss
     f1.close()

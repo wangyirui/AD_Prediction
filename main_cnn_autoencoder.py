@@ -113,6 +113,8 @@ def main(options):
 
     # main training loop
     last_dev_loss = 1e-4
+    max_acc = 0
+    max_epoch = 0
     f1 = open("cnn_autoencoder_loss_train", 'a')
     f2 = open("cnn_autoencoder_loss_dev", 'a')
     for epoch_i in range(options.epochs):
@@ -193,10 +195,15 @@ def main(options):
         logging.info("Average validation loss is {0:.5f} at the end of epoch {1}".format(dev_avg_loss.data[0], epoch_i))
         logging.info("Average validation accuracy is {0:.5f} at the end of epoch {1}".format(dev_avg_acu, epoch_i))
 
+        if dev_avg_acu > max_acc:
+            max_acc = dev_avg_acu
+            max_epoch = epoch_i
 
-        if (abs(dev_avg_loss.data[0] - last_dev_loss) <= options.estop) or ((epoch_i+1)%20==0):
-            torch.save(model.state_dict(), open("3DCNN_model_" + str(epoch_i), 'wb'))
+        #if (abs(dev_avg_loss.data[0] - last_dev_loss) <= options.estop) or ((epoch_i+1)%20==0):
+        #    torch.save(model.state_dict(), open("3DCNN_model_" + str(epoch_i) + '_', 'wb'))
         last_dev_loss = dev_avg_loss.data[0]
+        logging.info("Maximum accuracy on dev set is {0:.5f} for now".format(max_acc))
+    logging.info("Maximum accuracy on dev set is {0:.5f} at the end of epoch {1}".format(max_acc, max_epoch))
     f1.close()
     f2.close()
 

@@ -16,8 +16,6 @@ class CNN(nn.Module):
         self.fc2 = nn.Linear(80, num_classes)
         self.softmax = nn.LogSoftmax()
 
-        for p in self.conv1.parameters():
-            p.requires_grad = False
 
     def forward(self, out):
         out = self.pool1(self.relu1(self.conv1(out)))

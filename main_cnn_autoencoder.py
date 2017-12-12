@@ -45,7 +45,7 @@ parser.add_argument("--autoencoder", default=True, type=bool,
                     help="Whether to use the parameters from pretrained autoencoder.")
 parser.add_argument("--num_classes", default=2, type=int,
                     help="The number of classes, 2 or 3.")
-parser.add_argument("--estop", default=1e-2, type=float,
+parser.add_argument("--estop", default=1e-5, type=float,
                     help="Early stopping criteria on the development set. (default=1e-2)")  
 # feel free to add more arguments as you need
 
@@ -112,7 +112,7 @@ def main(options):
     optimizer = torch.optim.Adam(filter(lambda x: x.requires_grad, model.parameters()), lr, weight_decay=options.weight_decay)
 
     # main training loop
-    last_dev_loss = 1e-2
+    last_dev_loss = 1e-4
     f1 = open("cnn_autoencoder_loss_train", 'a')
     f2 = open("cnn_autoencoder_loss_dev", 'a')
     for epoch_i in range(options.epochs):
@@ -142,7 +142,7 @@ def main(options):
             loss = criterion(train_output, ground_truth)
 
             train_loss += loss
-            correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
+            correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
             correct_cnt += correct_this_batch
             accuracy = float(correct_this_batch) / len(ground_truth)
             logging.info("batch {0} training loss is : {1:.5f}".format(it, loss.data[0]))
@@ -180,7 +180,7 @@ def main(options):
             _, predict = test_prob_predict.topk(1)
             loss = criterion(test_output, ground_truth)
             dev_loss += loss
-            correct_this_batch = (predict.squeeze(1) == ground_truth).sum()
+            correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
             correct_cnt += (predict.squeeze(1) == ground_truth).sum()
             accuracy = float(correct_this_batch) / len(ground_truth)
             logging.info("batch {0} dev loss is : {1:.5f}".format(it, loss.data[0]))

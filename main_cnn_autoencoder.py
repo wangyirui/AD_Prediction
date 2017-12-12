@@ -45,7 +45,7 @@ parser.add_argument("--autoencoder", default=True, type=bool,
                     help="Whether to use the parameters from pretrained autoencoder.")
 parser.add_argument("--num_classes", default=2, type=int,
                     help="The number of classes, 2 or 3.")
-parser.add_argument("--estop", default=1e-2, type=float,
+parser.add_argument("--estop", default=1e-5, type=float,
                     help="Early stopping criteria on the development set. (default=1e-2)")  
 # feel free to add more arguments as you need
 
@@ -112,7 +112,7 @@ def main(options):
     optimizer = torch.optim.Adam(filter(lambda x: x.requires_grad, model.parameters()), lr, weight_decay=options.weight_decay)
 
     # main training loop
-    last_dev_loss = 1e-2
+    last_dev_loss = 1e-4
     f1 = open("cnn_autoencoder_loss_train", 'a')
     f2 = open("cnn_autoencoder_loss_dev", 'a')
     for epoch_i in range(options.epochs):

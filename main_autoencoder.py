@@ -75,7 +75,7 @@ def main(options):
                 output, s_ = autoencoder(batch)
                 loss1 = mean_square_loss(output, batch)
                 s = Variable(torch.ones(s_.shape)*sparsity).cuda()
-                loss2 = (s*torch.log(s/(s_+1e-8)) + (1-s)*torch.log((1-s)/((1-s_+1e-8))).sum()/options.batch_size
+                loss2 = (s*torch.log(s/(s_+1e-8)) + (1-s)*torch.log((1-s)/((1-s_+1e-8)))).sum()/options.batch_size
                 #kl_div_loss(mean_activitaion, sparsity)
                 loss = loss1 + beta * loss2
                 train_loss += loss

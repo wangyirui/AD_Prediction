@@ -92,7 +92,7 @@ def main(options):
     model = CNN(options.num_classes)
 
     if use_cuda > 0:
-        model = nn.DataParallel(model, device_ids=options.gpuid).cuda()
+        model = model.cuda()
     else:
         model.cpu()
 

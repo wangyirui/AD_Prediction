@@ -30,7 +30,9 @@ parser.add_argument("--gpuid", default=[0], nargs='+', type=int,
 parser.add_argument("--num_classes", default=2, type=int,
                     help="Number of classes.")
 parser.add_argument("--epochs", default=20, type=int,
-                    help="Epochs through the data. (default=20)")  
+                    help="Epochs through the data. (default=20)")
+parser.add_argument("--estop", default=1e-4, type=float,
+                    help="Early stopping criteria on the development set. (default=1e-4)")  
 
 def main(options):
 
@@ -66,6 +68,7 @@ def main(options):
 
     optimizer = torch.optim.Adam(autoencoder.parameters(), lr=options.learning_rate, weight_decay=options.weight_decay)
     
+    last_train_loss = 1e-4
     f = open("autoencoder_loss", 'a')
     for epoch in range(options.epochs):
         train_loss = 0.
@@ -88,8 +91,9 @@ def main(options):
                 optimizer.step()
         train_avg_loss = train_loss/(len(train_loader)*1000)
         print("Average training loss is {0:.5f} at the end of epoch {1}".format(train_avg_loss.data[0], epoch))
-        if (epoch+1)%20==0:
+        if (abs(train_avg_loss.data[0] - last_training_loss) <= options.estop) or ((epoch+1)%20==0):
             torch.save(autoencoder.state_dict(), open("autoencoder_pretrained_model"+str(epoch), 'wb'))
+        last_train_loss = train_avg_loss.data[0]
     f.close()
 if __name__ == "__main__":
   ret = parser.parse_known_args()

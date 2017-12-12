@@ -12,18 +12,16 @@ class CNN(nn.Module):
         # self.relu2 = nn.ReLU(inplace=True)
         # self.pool2 = nn.MaxPool3d(kernel_size=3, stride=3)
         # self.fc1 = nn.Linear(5*5*5*200, 800)
-        self.fc1 = nn.Linear(2*2*2*410, 80)
+        self.fc1 = nn.Linear(2*3*2*410, 80)
         self.fc2 = nn.Linear(80, num_classes)
         self.softmax = nn.LogSoftmax()
 
-        for p in self.conv1.parameters():
-            p.requires_grad = False
 
     def forward(self, out):
         out = self.pool1(self.relu1(self.conv1(out)))
         # out = self.pool2(self.relu2(self.conv2(out)))
         # out = out.view(-1,5*5*5*200)
-        out = out.view(-1, 2*2*2*410)
+        out = out.view(-1, 2*3*2*410)
         out = self.fc1(out)
         out = self.fc2(out)
         out = self.softmax(out)

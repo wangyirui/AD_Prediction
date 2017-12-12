@@ -107,7 +107,7 @@ def main(options):
     criterion = torch.nn.NLLLoss()
 
     lr = options.learning_rate
-    optimizer = torch.optim.Adam(model.parameters(), lr, weight_decay=options.weight_decay)
+    optimizer = torch.optim.Adam(filter(lambda x: x.requires_grad, model.parameters()), lr, weight_decay=options.weight_decay)
 
     # main training loop
     for epoch_i in range(options.epochs):

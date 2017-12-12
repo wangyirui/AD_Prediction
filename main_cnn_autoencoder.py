@@ -22,7 +22,7 @@ import random
 from custom_transform import CustomResize
 from custom_transform import CustomToTensor
 
-from AD_Dataset import AD_Dataset
+from AD_Standard_CNN_Dataset import AD_Standard_CNN_Dataset
 from cnn_3d_with_ae import CNN
 
 logging.basicConfig(
@@ -45,6 +45,8 @@ parser.add_argument("--autoencoder", default=True, type=bool,
                     help="Whether to use the parameters from pretrained autoencoder.")
 parser.add_argument("--num_classes", default=2, type=int,
                     help="The number of classes, 2 or 3.")
+parser.add_argument("--estop", default=1e-2, type=float,
+                    help="Early stopping criteria on the development set. (default=1e-2)")  
 # feel free to add more arguments as you need
 
 
@@ -57,16 +59,16 @@ def main(options):
     else:
         TRAINING_PATH = 'train.txt'
         TESTING_PATH = 'test.txt'
-    IMG_PATH = './ImageNoSkull'
+    IMG_PATH = './Whole'
 
-    trg_size = (110, 110, 110)
+    trg_size = (121, 145, 121)
     
-    transformations = transforms.Compose([CustomResize("CNN", trg_size),
-                                          CustomToTensor("CNN")
-                                        ])
+    # transformations = transforms.Compose([CustomResize("CNN", trg_size),
+    #                                       CustomToTensor("CNN")
+    #                                     ])
 
-    dset_train = AD_Dataset(IMG_PATH, TRAINING_PATH, transformations)
-    dset_test = AD_Dataset(IMG_PATH, TESTING_PATH, transformations)
+    dset_train = AD_Standard_CNN_Dataset(IMG_PATH, TRAINING_PATH)
+    dset_test = AD_Standard_CNN_Dataset(IMG_PATH, TESTING_PATH)
 
     # Use argument load to distinguish training and testing
 
@@ -97,7 +99,7 @@ def main(options):
         model.cpu()
 
     if options.autoencoder:
-        pretrained_ae = torch.load("./autoencoder_pretrained_model19")
+        pretrained_ae = torch.load("./autoencoder_pretrained_model39")
         model.state_dict()['conv1.weight'] = pretrained_ae['encoder.weight'].view(410,1,7,7,7)
         model.state_dict()['conv1.bias'] = pretrained_ae['encoder.bias']
 
@@ -110,6 +112,9 @@ def main(options):
     optimizer = torch.optim.Adam(filter(lambda x: x.requires_grad, model.parameters()), lr, weight_decay=options.weight_decay)
 
     # main training loop
+    last_dev_loss = 1e-2
+    f1 = open("cnn_autoencoder_loss_train", 'a')
+    f2 = open("cnn_autoencoder_loss_dev", 'a')
     for epoch_i in range(options.epochs):
         logging.info("At {0}-th epoch.".format(epoch_i))
         train_loss = 0.0
@@ -142,6 +147,8 @@ def main(options):
             accuracy = float(correct_this_batch) / len(ground_truth)
             logging.info("batch {0} training loss is : {1:.5f}".format(it, loss.data[0]))
             logging.info("batch {0} training accuracy is : {1:.5f}".format(it, accuracy))
+            f1.write("batch {0} training loss is : {1:.5f}\n".format(it, loss.data[0]))
+            f1.write("batch {0} training accuracy is : {1:.5f}\n".format(it, loss.data[0]))
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -178,15 +185,20 @@ def main(options):
             accuracy = float(correct_this_batch) / len(ground_truth)
             logging.info("batch {0} dev loss is : {1:.5f}".format(it, loss.data[0]))
             logging.info("batch {0} dev accuracy is : {1:.5f}".format(it, accuracy))
+            f2.write("batch {0} dev loss is : {1:.5f}".format(it, loss.data[0]))
+            f2.write("batch {0} dev accuracy is : {1:.5f}".format(it, accuracy))
 
         dev_avg_loss = dev_loss / (len(dset_test) / options.batch_size)
         dev_avg_acu = float(correct_cnt) / len(dset_test)
         logging.info("Average validation loss is {0:.5f} at the end of epoch {1}".format(dev_avg_loss.data[0], epoch_i))
         logging.info("Average validation accuracy is {0:.5f} at the end of epoch {1}".format(dev_avg_acu, epoch_i))
 
-        if (epoch_i+1)%20==0:
-            torch.save(model.state_dict(), open("3DCNN_model_" + str(epoch_i), 'wb'))
 
+        if (abs(train_avg_loss - last_training_loss) <= options.estop) or ((epoch_i+1)%20==0):
+            torch.save(model.state_dict(), open("3DCNN_model_" + str(epoch_i), 'wb'))
+        last_dev_loss = dev_avg_loss
+    f1.close()
+    f2.close()
 
 if __name__ == "__main__":
   ret = parser.parse_known_args()

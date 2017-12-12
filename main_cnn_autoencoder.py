@@ -121,7 +121,7 @@ def main(options):
 
             # add channel dimension: (batch_size, D, H ,W) to (batch_size, 1, D, H ,W)
             # since 3D convolution requires 5D tensors
-            img_input = imgs#.unsqueeze(1)
+            img_input = imgs.unsqueeze(1)
 
             integer_encoded = labels.data.cpu().numpy()
             # target should be LongTensor in loss function
@@ -160,7 +160,7 @@ def main(options):
             else:
                 imgs, labels = Variable(data_dic['image'], volatile=True), Variable(data_dic['label'], volatile=True)
 
-            img_input = imgs#.unsqueeze(1)
+            img_input = imgs.unsqueeze(1)
             integer_encoded = labels.data.cpu().numpy()
             ground_truth = Variable(torch.from_numpy(integer_encoded), volatile=True).long()
             if use_cuda:

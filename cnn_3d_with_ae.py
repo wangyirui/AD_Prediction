@@ -21,6 +21,6 @@ class CNN(nn.Module):
         out = out.view(-1,5*5*5*200)
         out = self.fc1(out)
         out = self.fc2(out)
-        out = self.softmax(out,dim=1)
+        out = self.softmax(out)
         return out
 

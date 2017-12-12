@@ -8,9 +8,9 @@ from PIL import Image
 import random
 import torch
 
-NON_AX = (1, 2)
+NON_AX = (0, 1)
 NON_COR = (0, 2)
-NON_SAG = (0, 1)
+NON_SAG = (1, 2)
 
 
 class AD_Standard_3DRandomPatch(Dataset):

@@ -22,7 +22,7 @@ import random
 from custom_transform import CustomResize
 from custom_transform import CustomToTensor
 
-from AD_Dataset import AD_Dataset
+from AD_Standard_CNN_Dataset import AD_Standard_CNN_Dataset
 from cnn_3d_with_ae import CNN
 
 logging.basicConfig(
@@ -67,8 +67,8 @@ def main(options):
     #                                       CustomToTensor("CNN")
     #                                     ])
 
-    dset_train = AD_Dataset(IMG_PATH, TRAINING_PATH)
-    dset_test = AD_Dataset(IMG_PATH, TESTING_PATH)
+    dset_train = AD_Standard_CNN_Dataset(IMG_PATH, TRAINING_PATH)
+    dset_test = AD_Standard_CNN_Dataset(IMG_PATH, TESTING_PATH)
 
     # Use argument load to distinguish training and testing
 

@@ -98,7 +98,8 @@ def main(options):
 
     if options.autoencoder:
         pretrained_ae = torch.load("./autoencoder_pretrained_model19")
-        model = model.load_ae(pretrained_ae)
+        model.state_dict()['conv.weight'] = ae['encoder.weight'].view(410,1,7,7,7)
+        model.state_dict()['conv.bias'] = ae['encoder.bias']
 
     criterion = torch.nn.NLLLoss()
 

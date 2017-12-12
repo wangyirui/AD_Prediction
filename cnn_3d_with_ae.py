@@ -13,7 +13,7 @@ class CNN(nn.Module):
         self.pool2 = nn.MaxPool3d(kernel_size=3, stride=3)
         self.fc1 = nn.Linear(5*5*5*200, 800)
         self.fc2 = nn.Linear(800, num_classes)
-        self.softmax = nn.Softmax()
+        self.softmax = nn.LogSoftmax()
 
     def forward(self, out):
         out = self.pool1(self.relu1(self.conv1(out)))
@@ -21,6 +21,6 @@ class CNN(nn.Module):
         out = out.view(-1,5*5*5*200)
         out = self.fc1(out)
         out = self.fc2(out)
-        out = self.softmax(out)
+        out = self.softmax(out,dim=1)
         return out
 

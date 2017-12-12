@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 
 
 class CustomResize(object):
-    def __init__(self, network_type, trg_size):
+    def __init__(self, trg_size):
 
         self.trg_size = trg_size
-        self.network_type = network_type
+
 
     def __call__(self, img):
         resized_img = self.resize_image(img, self.trg_size)
@@ -29,8 +29,8 @@ class CustomResize(object):
         return res
 
 class CustomToTensor(object):
-    def __init__(self, network_type):
-        self.network_type = network_type
+    def __init__(self):
+        pass
 
     def __call__(self, pic):
 

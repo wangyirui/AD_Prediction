@@ -14,7 +14,7 @@ class CNN(nn.Module):
     def forward(self, out):
         out = self.conv(out)
         out = self.pool(out)
-        out = out.view(1,15*15*15)
+        out = out.view(-1,15*15*15)
         out = self.fc1(out)
         out = self.fc2(out)
         out = self.softmax(out)

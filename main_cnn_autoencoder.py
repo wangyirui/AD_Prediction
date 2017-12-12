@@ -23,8 +23,7 @@ from custom_transform import CustomResize
 from custom_transform import CustomToTensor
 
 from AD_Dataset import AD_Dataset
-
-from 3n_cnn_with_ae import CNN
+from cnn_3d_with_ae import CNN
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s',

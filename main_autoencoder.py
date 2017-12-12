@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader,Dataset
 import torchvision
 
 from autoencoder import AutoEncoder 
-from AD_3DRandomPatch import AD_3DRandomPatch
+from AD_Standard_3DRandomPatch import AD_Standard_3DRandomPatch
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)s: %(message)s',
@@ -38,9 +38,9 @@ def main(options):
         TRAINING_PATH = 'train_2classes.txt'
     else:
         TRAINING_PATH = 'train.txt'
-    IMG_PATH = './ImageNoSkull'
+    IMG_PATH = './Whole'
 
-    dset_train = AD_3DRandomPatch(IMG_PATH, TRAINING_PATH)
+    dset_train = AD_Standard_3DRandomPatch(IMG_PATH, TRAINING_PATH)
 
     train_loader = DataLoader(dset_train,
                               batch_size = options.batch_size,
@@ -62,12 +62,12 @@ def main(options):
     else:
         autoencoder = autoencoder.cpu()
 
-    autoencoder.load_state_dict(torch.load("./autoencoder_pretrained_model19"))
+    #autoencoder.load_state_dict(torch.load("./autoencoder_pretrained_model19"))
 
     optimizer = torch.optim.Adam(autoencoder.parameters(), lr=options.learning_rate, weight_decay=options.weight_decay)
     
     f = open("autoencoder_loss", 'a')
-    for epoch in range(20, options.epochs):
+    for epoch in range(options.epochs):
         train_loss = 0.
         print("At {0}-th epoch.".format(epoch))
         for i, patches in enumerate(train_loader):

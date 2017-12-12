@@ -63,31 +63,32 @@ def main(options):
         autoencoder = autoencoder.cpu()
 
     optimizer = torch.optim.Adam(autoencoder.parameters(), lr=options.learning_rate, weight_decay=options.weight_decay)
-
-    train_loss = 0.
+    
+    f = open("autoencoder_loss", 'a')
     for epoch in range(options.epochs):
+        train_loss = 0.
         print("At {0}-th epoch.".format(epoch))
         for i, patches in enumerate(train_loader):
-            if i==1:
-                break
             patch = patches['patch']
-            for b, batch in patch:
+            for b, batch in enumerate(patch):
                 batch = Variable(batch).cuda()
                 output, s_ = autoencoder(batch)
-                loss1 = mean_square_loss(batch, output)
+                loss1 = mean_square_loss(output, batch)
                 s = Variable(torch.ones(s_.shape)*sparsity).cuda()
-                loss2 = (s_*torch.log(s_/s+1e-8) + (1-s_)*torch.log((1-s_)/(1-s)+1e-8)).sum()/options.batch_size
+                loss2 = (s*torch.log(s/(s_+1e-8)) + (1-s)*torch.log((1-s)/((1-s_+1e-8))).sum()/options.batch_size
                 #kl_div_loss(mean_activitaion, sparsity)
                 loss = loss1 + beta * loss2
                 train_loss += loss
                 logging.info("batch {0} training loss is : {1:.5f}, {2:.5f}".format(i*1000+b, loss1.data[0], loss2.data[0]))
+                f.write("batch {0} training loss is : {1:.3f}\n".format(i*1000+b, loss.data[0]))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
         train_avg_loss = train_loss/(len(train_loader)*1000)
         print("Average training loss is {0:.5f} at the end of epoch {1}".format(train_avg_loss.data[0], epoch))
-    torch.save(autoencoder.state_dict(), open("autoencoder_pretrained_model", 'wb'))
-
+        if (epoch+1)%50==0:
+            torch.save(autoencoder.state_dict(), open("autoencoder_pretrained_model"+str(epoch), 'wb'))
+    f.close()
 if __name__ == "__main__":
   ret = parser.parse_known_args()
   options = ret[0]

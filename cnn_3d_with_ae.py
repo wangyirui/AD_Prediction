@@ -21,6 +21,6 @@ class CNN(nn.Module):
         return out
 
     def load_ae(self, ae):
-        cnn.state_dict()['conv.weight'] = ae.state_dict()['encoder.weight'].view(410,1,7,7,7)
-        cnn.state_dict()['conv.bias'] = ae.state_dict()['encoder.bias']
+        cnn.state_dict()['conv.weight'] = ae['encoder.weight'].view(410,1,7,7,7)
+        cnn.state_dict()['conv.bias'] = ae['encoder.bias']
         return cnn

@@ -196,7 +196,7 @@ def main(options):
 
         if (abs(dev_avg_loss.data[0] - last_dev_loss) <= options.estop) or ((epoch_i+1)%20==0):
             torch.save(model.state_dict(), open("3DCNN_model_" + str(epoch_i), 'wb'))
-        last_dev_loss = dev_avg_loss
+        last_dev_loss = dev_avg_loss.data[0]
     f1.close()
     f2.close()
 

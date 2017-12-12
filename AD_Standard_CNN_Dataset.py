@@ -2,6 +2,7 @@ import nibabel as nib
 import os
 from torch.utils.data import Dataset
 import numpy as np
+import torch
 
 class AD_Standard_CNN_Dataset(Dataset):
     """labeled Faces in the Wild dataset."""

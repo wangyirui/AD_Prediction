@@ -86,7 +86,7 @@ def main(options):
                 optimizer.step()
         train_avg_loss = train_loss/(len(train_loader)*1000)
         print("Average training loss is {0:.5f} at the end of epoch {1}".format(train_avg_loss.data[0], epoch))
-        if (epoch+1)%50==0:
+        if (epoch+1)%20==0:
             torch.save(autoencoder.state_dict(), open("autoencoder_pretrained_model"+str(epoch), 'wb'))
     f.close()
 if __name__ == "__main__":

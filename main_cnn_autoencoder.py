@@ -185,8 +185,8 @@ def main(options):
             accuracy = float(correct_this_batch) / len(ground_truth)
             logging.info("batch {0} dev loss is : {1:.5f}".format(it, loss.data[0]))
             logging.info("batch {0} dev accuracy is : {1:.5f}".format(it, accuracy))
-            f2.write("batch {0} dev loss is : {1:.5f}".format(it, loss.data[0]))
-            f2.write("batch {0} dev accuracy is : {1:.5f}".format(it, accuracy))
+            f2.write("batch {0} dev loss is : {1:.5f}\n".format(it, loss.data[0]))
+            f2.write("batch {0} dev accuracy is : {1:.5f}\n".format(it, accuracy))
 
         dev_avg_loss = dev_loss / (len(dset_test) / options.batch_size)
         dev_avg_acu = float(correct_cnt) / len(dset_test)

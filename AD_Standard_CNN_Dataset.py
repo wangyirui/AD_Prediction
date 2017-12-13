@@ -19,6 +19,7 @@ class AD_Standard_CNN_Dataset(Dataset):
         self.root_dir = root_dir
         self.data_file = data_file
         self.transform = transform
+        self.noise = noise
     
     def __len__(self):
         return sum(1 for line in open(self.data_file))
@@ -40,7 +41,7 @@ class AD_Standard_CNN_Dataset(Dataset):
             label = 2
         
         image_array = np.array(image.get_data())
-        if noise:
+        if self.noise:
             image_array = gaussianNoise(image_array)
         image_array = customToTensor(image_array)
         sample = {'image': image_array, 'label': label}

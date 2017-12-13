@@ -136,7 +136,7 @@ def ax3Slices(image):
     return get3Slices(image_array, AX_INDEX, AX_SCETION)
 
 
-def cor3Slicesimage):
+def cor3Slices(image):
     image_array = np.array(image.get_data())
     return get3Slices(image_array, COR_INDEX, COR_SCETION)
 

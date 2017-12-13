@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
+import math
 
 
 __all__ = ['AlexNet', 'alexnet']
@@ -65,4 +66,9 @@ def alexnet(pretrained=False, **kwargs):
 
     model.classifier.add_module('fc_out', nn.Linear(1000,2))
     model.classifier.add_module('sigmoid', nn.LogSoftmax())
+
+    stdv = 1.0 / math.sqrt(1000)
+    for p in model.classifier.fc_out.parameters():
+        p.data.uniform_(-stdv, stdv)
+
     return model

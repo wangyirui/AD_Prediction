@@ -17,6 +17,8 @@ class CNN(nn.Module):
         self.dropout2 = nn.Dropout(0.5)
         self.fc2 = nn.Linear(80, num_classes)
         self.softmax = nn.LogSoftmax()
+        parameter_initialization()
+
 
 
     def forward(self, out):
@@ -30,4 +32,11 @@ class CNN(nn.Module):
         out = self.fc2(out)
         out = self.softmax(out)
         return out
+
+    def parameter_initialization(self):
+        stdv = 1.0 / math.sqrt(410)
+        for weight in self.parameters():
+            weight.data.uniform_(-stdv, stdv)
+
+
 

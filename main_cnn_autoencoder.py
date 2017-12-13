@@ -200,7 +200,8 @@ def main(options):
             max_epoch = epoch_i
 
         #if (abs(dev_avg_loss.data[0] - last_dev_loss) <= options.estop) or ((epoch_i+1)%20==0):
-        #    torch.save(model.state_dict(), open("3DCNN_model_" + str(epoch_i) + '_', 'wb'))
+        if max_acc>0.85:
+            torch.save(model.state_dict(), open("3DCNN_model_" + str(epoch_i) + '_' + str(max_acc), 'wb'))
         last_dev_loss = dev_avg_loss.data[0]
         logging.info("Maximum accuracy on dev set is {0:.5f} for now".format(max_acc))
     logging.info("Maximum accuracy on dev set is {0:.5f} at the end of epoch {1}".format(max_acc, max_epoch))

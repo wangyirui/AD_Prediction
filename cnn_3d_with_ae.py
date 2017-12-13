@@ -17,7 +17,7 @@ class CNN(nn.Module):
         self.dropout2 = nn.Dropout(0.5)
         self.fc2 = nn.Linear(80, num_classes)
         self.softmax = nn.LogSoftmax()
-        parameter_initialization()
+        self.parameter_initialization()
 
 
 

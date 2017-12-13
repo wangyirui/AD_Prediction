@@ -70,7 +70,7 @@ def main(options):
     #                                     ])
 
     dset_train = AD_Standard_CNN_Dataset(IMG_PATH, TRAINING_PATH, noise=True)
-    dset_test = AD_Standard_CNN_Dataset(IMG_PATH, TESTING_PATH, noise=True)
+    dset_test = AD_Standard_CNN_Dataset(IMG_PATH, TESTING_PATH, noise=False)
 
     # Use argument load to distinguish training and testing
 

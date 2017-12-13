@@ -62,7 +62,7 @@ def gaussianNoise(img_array):
     var = random.choice(var_lst)
     sigma = var**0.5
     gauss_noise = np.random.normal(mean,sigma,(w,h,d))
-    gauss_noise = gauss.reshape(w,h,d)
+    gauss_noise = gauss_noise.reshape(w,h,d)
     noise_image = img_array + gauss_noise
     return noise_image
 

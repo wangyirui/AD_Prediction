@@ -26,6 +26,8 @@ from custom_transform2D import CustomToTensor
 
 from AD_Dataset import AD_Dataset
 from AD_Standard_2DSlicesData import AD_Standard_2DSlicesData
+from AD_Standard_2DRandomSlicesData import AD_Standard_2DRandomSlicesData
+from AD_Standard_2DTestingSlices import AD_Standard_2DTestingSlices
 
 from AlexNet2D import alexnet
 
@@ -73,7 +75,7 @@ def main(options):
     transformations = transforms.Compose([CustomResize(trg_size),
                                           CustomToTensor()
                                         ])
-    dset_train = AD_Standard_2DSlicesData(IMG_PATH, TRAINING_PATH, transformations)
+    dset_train = AD_Standard_2DRandomSlicesData(IMG_PATH, TRAINING_PATH, transformations)
     dset_test = AD_Standard_2DSlicesData(IMG_PATH, TESTING_PATH, transformations)
 
     # Use argument load to distinguish training and testing

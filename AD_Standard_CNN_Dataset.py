@@ -3,11 +3,12 @@ import os
 from torch.utils.data import Dataset
 import numpy as np
 import torch
+import random
 
 class AD_Standard_CNN_Dataset(Dataset):
     """labeled Faces in the Wild dataset."""
     
-    def __init__(self, root_dir, data_file, transform=None):
+    def __init__(self, root_dir, data_file, transform=None, noise=True):
         """
         Args:
             root_dir (string): Directory of all the images.
@@ -38,7 +39,10 @@ class AD_Standard_CNN_Dataset(Dataset):
         elif img_label == 'MCI':
             label = 2
         
-        image_array = customToTensor(np.array(image.get_data()))
+        image_array = np.array(image.get_data())
+        if noise:
+            image_array = gaussianNoise(image_array)
+        image_array = customToTensor(image_array)
         sample = {'image': image_array, 'label': label}
         
         return sample
@@ -49,5 +53,16 @@ def customToTensor(pic):
         img = torch.unsqueeze(img,0)
         # backward compatibility
         return img.float()
+
+def gaussianNoise(img_array):
+    var_lst = [0, 0.0005, 0.00075, 0.001, 0.0025, 0.005]
+    w,h,d= img_array.shape
+    mean = 0
+    var = random.choice(var_lst)
+    sigma = var**0.5
+    gauss_noise = np.random.normal(mean,sigma,(w,h,d))
+    gauss_noise = gauss.reshape(w,h,d)
+    noise_image = img_array + gauss_noise
+    return noise_image
 
 

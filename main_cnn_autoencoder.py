@@ -35,7 +35,7 @@ parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")  
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
-parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float,
+parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')         
 parser.add_argument("--batch_size", default=1, type=int,
                     help="Batch size for training. (default=1)")
@@ -47,6 +47,8 @@ parser.add_argument("--num_classes", default=2, type=int,
                     help="The number of classes, 2 or 3.")
 parser.add_argument("--estop", default=1e-5, type=float,
                     help="Early stopping criteria on the development set. (default=1e-2)")  
+parser.add_argument("--noise", default=True, type=bool,
+                    help="Whether to add gaussian noise to scans.")
 # feel free to add more arguments as you need
 
 
@@ -67,8 +69,8 @@ def main(options):
     #                                       CustomToTensor("CNN")
     #                                     ])
 
-    dset_train = AD_Standard_CNN_Dataset(IMG_PATH, TRAINING_PATH)
-    dset_test = AD_Standard_CNN_Dataset(IMG_PATH, TESTING_PATH)
+    dset_train = AD_Standard_CNN_Dataset(IMG_PATH, TRAINING_PATH, noise=True)
+    dset_test = AD_Standard_CNN_Dataset(IMG_PATH, TESTING_PATH, noise=True)
 
     # Use argument load to distinguish training and testing
 
@@ -200,7 +202,7 @@ def main(options):
             max_epoch = epoch_i
 
         #if (abs(dev_avg_loss.data[0] - last_dev_loss) <= options.estop) or ((epoch_i+1)%20==0):
-        if max_acc>0.85:
+        if max_acc>0.80:
             torch.save(model.state_dict(), open("3DCNN_model_" + str(epoch_i) + '_' + str(max_acc), 'wb'))
         last_dev_loss = dev_avg_loss.data[0]
         logging.info("Maximum accuracy on dev set is {0:.5f} for now".format(max_acc))

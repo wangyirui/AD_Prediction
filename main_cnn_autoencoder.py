@@ -56,12 +56,12 @@ parser.add_argument("--noise", default=True, type=bool,
 def main(options):
     # Path configuration
     if options.num_classes == 2:
-        TRAINING_PATH = 'train_2classes.txt'
-        TESTING_PATH = 'test_2classes.txt'
+        TRAINING_PATH = 'train_2C_new.txt'
+        TESTING_PATH = 'validation_2C_new.txt'
     else:
         TRAINING_PATH = 'train.txt'
         TESTING_PATH = 'test.txt'
-    IMG_PATH = './Whole'
+    IMG_PATH = './NewWhole'
 
     trg_size = (121, 145, 121)
     

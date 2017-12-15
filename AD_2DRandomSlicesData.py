@@ -128,18 +128,15 @@ def getRandom3Slices(image_array, mean_direc, fraction, section, step = 2):
     return slice_2Dimgs
 
 
-def axRandom3Slices(image):
-    image_array = np.array(image.get_data())
+def axRandom3Slices(image_array):
     return getRandom3Slices(image_array, NON_AX, AX_F, AX_SCETION)
 
 
-def corRandom3Slices(image):
-    image_array = np.array(image.get_data())
+def corRandom3Slices(image_array):
     return getRandom3Slices(image_array, NON_COR, COR_F, COR_SCETION)
 
 
-def sagRandomeSlices(image):
-    image_array = np.array(image.get_data())
+def sagRandomeSlices(image_array):
     return getRandom3Slices(image_array, NON_SAG, SAG_F, SAG_SCETION)
 
 
